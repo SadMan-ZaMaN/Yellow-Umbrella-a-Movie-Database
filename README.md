@@ -1,6 +1,13 @@
 # YellowUmbrella
 
-An IMDb-style site for movies, TV series, anime and games. Built as the term project for **CSE 216 (Database Systems)**: a FastAPI backend talking to PostgreSQL through hand-written SQL (no ORM), with a plain HTML/JS frontend.
+An IMDb-style site for movies, TV series, anime and games, made as our project for the **CSE 216 Database Sessional** course. It's a FastAPI backend talking to PostgreSQL through hand-written SQL (no ORM), with a plain HTML/JS frontend.
+
+## Team Cells Interlinked
+
+| Name | Student ID |
+|---|---|
+| Sk. Arib Rajin Shahan | 2305068 |
+| Sadman Zaman | 2305075 |
 
 ![Movie page](docs/screenshots/movie.jpg)
 ![Top rated](docs/screenshots/top-rated.jpg)
