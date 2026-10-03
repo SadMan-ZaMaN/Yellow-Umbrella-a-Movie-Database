@@ -113,64 +113,152 @@ erDiagram
 └── frontend/             # the HTML pages; statics/ holds app.js, site.css and images
 ```
 
-## Running it locally
+## Getting started
 
-You'll need Python 3.10+ and PostgreSQL 12+.
+Setting it up takes about 15 minutes the first time, mostly installing things and waiting for data to download. The commands below are for **Windows**; macOS / Linux versions are shown next to them where they differ.
+
+### 1. Install the prerequisites
+
+| What | Where | Notes |
+|---|---|---|
+| Git | https://git-scm.com/downloads | |
+| Python 3.10 or newer | https://www.python.org/downloads/ | On Windows, tick **"Add python.exe to PATH"** in the installer. |
+| PostgreSQL 12 or newer | https://www.postgresql.org/download/ | The installer asks for a password for the `postgres` user. **Remember it**, you'll need it in step 4. Keep the default port, 5432. |
+
+You don't need Node.js. It's only used to rebuild the stylesheet, which is already built.
+
+### 2. Get the two free API keys
+
+The site gets its movies, shows and people from TMDB and its games from RAWG.
+
+**TMDB** (movies, TV, anime, people)
+1. Make an account at https://www.themoviedb.org/signup and verify your email.
+2. Go to **Settings → API** (https://www.themoviedb.org/settings/api) and request an API key. Pick "Developer". For the application URL, `http://localhost:8000` is fine.
+3. Copy the **API Read Access Token**, the long one that starts with `eyJ`, not the shorter "API Key".
+
+**RAWG** (games)
+1. Make an account at https://rawg.io/signup.
+2. Open https://rawg.io/apidocs, click **Get API Key**, fill in the short form and copy the key.
+
+### 3. Download the code and install the Python packages
 
 ```bash
 git clone https://github.com/SadMan-ZaMaN/Yellow-Umbrella-a-Movie-Database.git
 cd Yellow-Umbrella-a-Movie-Database
 
 python -m venv .venv
-.venv\Scripts\activate          # Windows
-# source .venv/bin/activate     # macOS / Linux
-pip install -r requirements.txt
+.venv\Scripts\activate                 # macOS / Linux: source .venv/bin/activate
+python -m pip install -r requirements.txt
 ```
 
-Create the database and load the schema:
+Once the virtual environment is active, your prompt starts with `(.venv)`. Every command below assumes it's active.
+
+### 4. Put your settings in `.env`
 
 ```bash
-createdb -U postgres imdb_project
-psql -U postgres -d imdb_project -f sql/schema.sql
-psql -U postgres -d imdb_project -f sql/functions.sql
+copy .env.example .env                 # macOS / Linux: cp .env.example .env
 ```
 
-Copy `.env.example` to `.env` and fill it in. The database settings and `JWT_SECRET_KEY` are required. The TMDB and RAWG keys are needed for search, trending and the data scripts. SMTP is only needed for password-reset emails.
+Open `.env` in any text editor and fill in:
 
-Then fill the database (next section), or load the small offline sample with `psql -U postgres -d imdb_project -f sql/seed.sql`. Then start the server:
+| Setting | What to put |
+|---|---|
+| `DB_PASSWORD` | the PostgreSQL password from step 1 |
+| `JWT_SECRET_KEY` | any long random string. Generate one with `python -c "import secrets; print(secrets.token_urlsafe(32))"` |
+| `TMDB_TOKEN` | the TMDB API Read Access Token from step 2 |
+| `RAWG_KEY` | the RAWG key from step 2 |
+
+Leave the other database settings as they are unless you changed them while installing PostgreSQL. The `SMTP_*` settings are optional, and only needed for password-reset emails (with Gmail, use an [App Password](https://support.google.com/accounts/answer/185833), not your normal one).
+
+A filled-in `.env` looks like this (these values are made up):
+
+```env
+DB_NAME=imdb_project
+DB_USER=postgres
+DB_PASSWORD=mypostgrespassword
+DB_HOST=localhost
+DB_PORT=5432
+JWT_SECRET_KEY=Qe8x2Lr0yN4m9TzV1cKpA7sWd3fGh6Jb
+TMDB_TOKEN=eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOi...
+RAWG_KEY=0123456789abcdef0123456789abcdef
+```
+
+`.env` is in `.gitignore`, so your keys never end up on GitHub.
+
+### 5. Create the database
 
 ```bash
-uvicorn main:app --reload
+python -m scripts.setup_db
 ```
 
-Open http://127.0.0.1:8000 for the site and http://127.0.0.1:8000/docs for the interactive API docs.
+This creates the `imdb_project` database and all its tables, triggers and functions.
 
-To make yourself an admin, sign up on the site and then run:
-
-```sql
-UPDATE users SET role = 'admin' WHERE username = 'your_username';
-```
-
-Already have a database from an older version of this project? Run `sql/upgrade.sql` and then `sql/functions.sql` on it, followed by `python -m scripts.backfill_catalog`.
-
-## Filling the database
-
-Run these from the project root:
+### 6. Fill it with movies, shows, games and awards
 
 ```bash
-python -m scripts.import_popular     # ~300 well-known movies, shows, anime and games (a couple of minutes)
-python -m scripts.import_awards      # award nominations from Wikidata, plus every nominee
+python -m scripts.import_popular       # ~300 well-known titles, about 2 minutes
+python -m scripts.import_awards        # ~1,300 award nominations from Wikidata, about 2 minutes
 ```
+
+The site also adds titles by itself as you use it: anything you search for and open gets saved. No API keys yet? `python -m scripts.setup_db --sample` (on a new, empty database) loads a small offline sample instead.
+
+### 7. Start the site
+
+```bash
+python -m uvicorn main:app --reload
+```
+
+Open **http://127.0.0.1:8000**. The interactive API docs are at http://127.0.0.1:8000/docs. Stop the server with `Ctrl+C`.
+
+### 8. (Optional) Make yourself an admin
+
+Sign up on the site, then:
+
+```bash
+python -m scripts.make_admin your_username
+```
+
+Reload the page and an **Admin** link appears in the nav.
+
+### Next time
+
+You only need to start the server again:
+
+```bash
+cd Yellow-Umbrella-a-Movie-Database
+.venv\Scripts\activate                 # macOS / Linux: source .venv/bin/activate
+python -m uvicorn main:app --reload
+```
+
+To update after pulling new code, run `python -m scripts.setup_db` again. On an existing database it applies any schema changes without touching your data.
+
+### If something goes wrong
+
+| Problem | Fix |
+|---|---|
+| `python` is not recognized | Python isn't on your PATH. Reinstall it with "Add python.exe to PATH" ticked, or use `py` instead of `python`. |
+| `Activate.ps1 cannot be loaded because running scripts is disabled` (PowerShell) | Run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once, or use Command Prompt instead. |
+| `password authentication failed for user "postgres"` | `DB_PASSWORD` in `.env` doesn't match the one you set when installing PostgreSQL. |
+| `Couldn't connect to PostgreSQL` / connection refused | PostgreSQL isn't running. On Windows, start the "postgresql" service from the Services app. |
+| Search finds nothing new / the home page has no trending titles | `TMDB_TOKEN` or `RAWG_KEY` is missing or wrong. Restart the server after fixing `.env`. |
+| You get logged out every time the server restarts | `JWT_SECRET_KEY` is empty in `.env`. |
+| `address already in use` | Something else is on port 8000. Use `python -m uvicorn main:app --reload --port 8001` and open http://127.0.0.1:8001. |
+
+## Data scripts
+
+All of these run from the project folder with the virtual environment active, as `python -m scripts.<name>`.
 
 | Script | What it does |
 |---|---|
+| `setup_db` | Creates the database and loads the schema, or updates an existing one. `--sample` adds a small offline dataset. |
+| `make_admin <username>` | Gives an account admin rights. |
 | `import_popular` | The most-voted movies and shows on TMDB, the most popular anime, and the games most people own on RAWG. Skips anything already imported. |
 | `import_awards` | Rebuilds the award tables from Wikidata (`--since 2015` for fewer years). **Replaces existing nominations.** |
 | `backfill_catalog` | Matches every existing title to TMDB / RAWG and refreshes its ids, images, synopsis, rating and vote count. |
 | `prune_obscure` | Lists titles with almost no votes that nobody has reviewed, listed or nominated. `--apply` deletes them. |
 | `add_nominations` | Adds nominations by hand (edit the lists at the top of the file). |
 
-The stylesheet is already built. If you change the styling or add Tailwind classes to a page, rebuild it with `npm install` once, then `npm run build:css`.
+The stylesheet is already built. If you change the styling or add Tailwind classes to a page, rebuild it with [Node.js](https://nodejs.org/): `npm install` once, then `npm run build:css`.
 
 ## Privacy and security
 
