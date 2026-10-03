@@ -1,0 +1,166 @@
+/*
+  Source for frontend/statics/site.css. After changing this file or adding
+  new Tailwind classes to a page, rebuild with:  npm run build:css
+*/
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-brand-dark text-white antialiased;
+  }
+  ::selection {
+    @apply bg-brand-gold text-brand-dark;
+  }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: #0B0C10; }
+  ::-webkit-scrollbar-thumb { background: #1f2833; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #fbbf24; }
+}
+
+@layer components {
+  /* ── Site nav (rendered by app.js) ─────────────────────── */
+  .site-nav {
+    @apply sticky top-0 z-[1000] bg-brand-dark/90 backdrop-blur-md border-b border-white/10;
+  }
+  .site-nav-inner {
+    @apply flex items-center gap-4 lg:gap-8 h-16 w-[92%] max-w-[1400px] mx-auto;
+  }
+  .site-logo {
+    @apply font-outfit text-2xl md:text-[1.7rem] font-extrabold text-brand-gold tracking-wide whitespace-nowrap;
+  }
+  .nav-link {
+    @apply text-brand-gray font-medium text-[0.95rem] hover:text-white transition-colors whitespace-nowrap;
+  }
+  .nav-link.is-active {
+    @apply text-brand-gold;
+  }
+  .nav-drawer .nav-link {
+    @apply block py-3 border-b border-white/5 text-base;
+  }
+  .btn-gold {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm
+           bg-brand-gold text-brand-dark hover:bg-brand-goldhover transition-colors;
+  }
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm
+           border border-brand-gold/70 text-brand-gold hover:bg-brand-gold/10 transition-colors;
+  }
+
+  /* ── Search box + suggestions (app.js attachSuggest) ────── */
+  .search-field {
+    @apply w-full bg-white/[0.06] border border-white/10 rounded-full text-white placeholder-brand-gray/60
+           pl-10 pr-4 py-2 text-sm outline-none focus:border-brand-gold/60 focus:bg-white/[0.09] transition-colors;
+  }
+  .suggest-box {
+    @apply absolute left-0 right-0 top-full mt-2 bg-[#14161c] border border-white/10 rounded-2xl p-1.5
+           shadow-[0_20px_50px_rgba(0,0,0,0.6)] z-[1100] max-h-[70vh] overflow-y-auto;
+  }
+  .suggest-item {
+    @apply flex items-center gap-3 p-2 rounded-xl text-left hover:bg-white/5;
+  }
+  .suggest-item.is-active {
+    @apply bg-white/10;
+  }
+
+  /* ── Poster cards (app.js mediaCard) ───────────────────── */
+  .poster-card {
+    @apply relative block rounded-xl overflow-hidden bg-brand-second/60 aspect-[2/3]
+           ring-1 ring-white/5 hover:ring-2 hover:ring-brand-gold/70 focus-visible:ring-2
+           focus-visible:ring-brand-gold outline-none transition-shadow;
+  }
+  .poster-card img {
+    @apply w-full h-full object-cover transition-transform duration-300 ease-out;
+  }
+  .poster-card:hover img {
+    transform: scale(1.05);
+  }
+  .poster-rating {
+    @apply absolute top-2 right-2 bg-black/75 px-2 py-0.5 rounded-md text-xs font-bold text-brand-gold;
+  }
+  .poster-info {
+    @apply absolute inset-x-0 bottom-0 p-3 pt-10 bg-gradient-to-t from-black via-black/70 to-transparent;
+  }
+  .poster-title {
+    @apply text-sm md:text-[0.95rem] font-semibold leading-snug line-clamp-2;
+  }
+  .poster-meta {
+    @apply text-xs text-brand-gray mt-0.5 capitalize;
+  }
+  .poster-row {
+    @apply flex gap-4 overflow-x-auto pb-3 snap-x scroll-smooth;
+    scrollbar-width: none;
+  }
+  .poster-row::-webkit-scrollbar { display: none; }
+  .poster-row > * {
+    @apply flex-none w-[140px] sm:w-[165px] lg:w-[185px] snap-start;
+  }
+  .poster-grid {
+    @apply grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-5;
+  }
+  .skeleton {
+    @apply rounded-xl bg-white/[0.06] animate-pulse aspect-[2/3];
+  }
+
+  .section-title {
+    @apply text-2xl md:text-3xl font-bold font-outfit;
+  }
+  .chip {
+    @apply px-4 py-1.5 rounded-full text-sm font-semibold border border-white/10 text-brand-gray
+           hover:text-white hover:border-white/30 transition-colors whitespace-nowrap;
+  }
+  .chip.is-active {
+    @apply border-brand-gold bg-brand-gold/10 text-brand-gold;
+  }
+
+  /* ── Home page tabs ────────────────────────────────────── */
+  .trending-tab {
+    @apply bg-transparent text-brand-gray text-sm md:text-base font-semibold cursor-pointer transition-colors
+           px-3 md:px-4 py-1.5 border-b-2 border-transparent hover:text-white whitespace-nowrap;
+  }
+  .trending-tab.active {
+    @apply text-brand-gold border-brand-gold;
+  }
+
+  /* ── Admin dashboard ───────────────────────────────────── */
+  .sidebar-btn {
+    @apply w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-brand-gray hover:text-white hover:bg-white/5 transition text-left;
+  }
+  .sidebar-btn.active {
+    @apply bg-brand-gold/10 text-brand-gold border border-brand-gold/20;
+  }
+  .table-row {
+    @apply flex items-center gap-4 p-4 border-b border-white/5 hover:bg-white/5 transition;
+  }
+  .table-row:last-child { @apply border-b-0; }
+  .badge-admin { @apply text-[10px] px-2 py-0.5 bg-red-500/20 text-red-400 rounded-full font-semibold uppercase; }
+  .badge-user { @apply text-[10px] px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-full font-semibold uppercase; }
+  .delete-btn {
+    @apply px-3 py-1.5 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-xs font-semibold hover:bg-red-500/20 transition whitespace-nowrap;
+  }
+
+  /* ── Bits carried over from the old style.css ──────────── */
+  .loading-spinner {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(251, 191, 36, 0.2);
+    border-radius: 50%;
+    border-top-color: #fbbf24;
+    animation: spin 1s ease-in-out infinite;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(251, 191, 36, 0.4); border-radius: 4px; }
+}
+
+@layer utilities {
+  /* hidden until app.js knows whether you're logged in */
+  .auth-hidden {
+    display: none !important;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

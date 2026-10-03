@@ -1,242 +1,127 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Yellow Umbrella - Event Details</title>
-    <link href="/statics/style.css" rel="stylesheet"/>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              brand: {
-                dark: '#0B0C10',
-                second: '#1f2833',
-                gold: '#fbbf24',
-                goldhover: '#f59e0b',
-                red: '#d97706',
-                gray: '#c5c6c7'
-              }
-            },
-            fontFamily: {
-              inter: ['Inter', 'sans-serif'],
-              outfit: ['Outfit', 'sans-serif'],
-            }
-          }
-        }
-      }
-    </script>
-    <style>
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(251, 191, 36, 0.4);
-            border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: rgba(251, 191, 36, 0.7);
-        }
-    </style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Awards - YellowUmbrella</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Outfit:wght@500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="/statics/site.css?v=5" rel="stylesheet"/>
 </head>
 <body class="bg-brand-dark text-white min-h-screen flex flex-col font-sans">
+<nav id="site-nav"></nav>
 
-<!-- Navigation -->
-<nav class="sticky top-0 z-[1000] bg-brand-dark/80 backdrop-blur-xl border-b border-white/10">
-    <div class="flex justify-between items-center h-[70px] w-[90%] max-w-[1400px] mx-auto">
-        <a class="font-outfit text-3xl font-extrabold text-brand-gold tracking-wide drop-shadow-[0_0_15px_rgba(251,191,36,0.8)] hover:drop-shadow-[0_0_25px_rgba(251,191,36,1)] transition-all" href="/">Yellow<span style="color: white; text-shadow: 0 0 10px rgba(255,255,255,0.8);">Umbrella</span></a>
-        <div class="flex gap-7 items-center">
-            <a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group" href="/">Home</a>
-            <a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group" href="/events.html">Awards</a>
-        </div>
+<header class="relative h-[200px] md:h-[280px] overflow-hidden">
+    <img id="event-image" src="" alt="" class="absolute inset-0 w-full h-full object-cover opacity-40">
+    <div class="absolute inset-0 bg-gradient-to-t from-brand-dark via-brand-dark/60 to-transparent"></div>
+    <div class="relative h-full w-[92%] max-w-[1400px] mx-auto flex flex-col justify-end pb-8">
+        <a href="/events.html" class="text-sm text-brand-gray hover:text-white mb-2">← All ceremonies</a>
+        <h1 id="event-title" class="text-3xl md:text-5xl font-extrabold font-outfit">Loading…</h1>
     </div>
-</nav>
+</header>
 
-<!-- Hero / Brand Banner -->
-<div class="w-full relative h-[300px] md:h-[400px] overflow-hidden flex items-center justify-center">
-    <div class="absolute inset-0 bg-gradient-to-r from-brand-gold/20 via-brand-red/20 to-brand-gold/20 flex z-0"></div>
-    <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30 z-0"></div>
-    <div class="absolute inset-0 bg-gradient-to-t from-brand-dark to-transparent z-0"></div>
-    <h1 id="event-title" class="relative z-10 text-5xl md:text-7xl font-extrabold font-outfit text-white drop-shadow-[0_5px_15px_rgba(0,0,0,1)] tracking-widest uppercase text-center w-full px-5">
-        Loading...
-    </h1>
-</div>
-
-<main class="w-[90%] max-w-[1400px] mx-auto flex-1 flex flex-col md:flex-row gap-10 py-10 relative z-20 -mt-[80px]">
-    
-    <!-- Sidebar: Years Menu -->
-    <aside class="w-full md:w-[250px] shrink-0 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl h-fit sticky top-[100px]">
-        <h3 class="text-xl font-bold mb-4 font-outfit border-b border-white/10 pb-2">Timeline</h3>
-        <div id="year-menu" class="flex flex-row md:flex-col gap-2 overflow-x-auto custom-scrollbar uppercase font-medium tracking-wide">
-            <!-- Years injected -->
-        </div>
+<main class="w-[92%] max-w-[1400px] mx-auto flex-1 flex flex-col md:flex-row gap-6 md:gap-10 py-8">
+    <!-- Years: a scrolling strip on phones, a sidebar from tablet up -->
+    <aside class="md:w-[180px] shrink-0">
+        <h2 class="hidden md:block text-sm font-semibold uppercase tracking-wider text-brand-gray mb-3">Year</h2>
+        <div id="year-menu" class="flex md:flex-col gap-2 overflow-x-auto md:overflow-y-auto md:max-h-[70vh] custom-scrollbar pb-2 md:pr-2 md:sticky md:top-24"></div>
     </aside>
 
-    <!-- Content Area -->
-    <div class="flex-1 min-w-0" id="content-area">
-        <div id="loading" class="text-center text-brand-gray text-xl py-10">Fetching Nominees...</div>
-        
-        <!-- Category Pill Navigation -->
-        <div class="w-full overflow-x-auto custom-scrollbar p-2 mb-6 hidden" id="cat-nav-wrapper">
-            <div id="cat-nav" class="flex gap-4">
-                <!-- Category Pills injected -->
-            </div>
-        </div>
-
-        <!-- Selected Category Header -->
-        <h2 id="viewing-category" class="text-3xl font-bold font-outfit text-brand-gold mb-8 hidden hidden"></h2>
-
-        <!-- Nominees Grid -->
-        <div id="nominees-grid" class="flex flex-col gap-6 w-full max-w-[1000px]">
-            <!-- Nominees Injected -->
-        </div>
-    </div>
+    <section class="flex-1 min-w-0">
+        <div id="cat-nav" class="flex gap-2 overflow-x-auto pb-2 mb-6"></div>
+        <h2 id="viewing" class="text-2xl md:text-3xl font-bold font-outfit mb-6"></h2>
+        <div id="nominees" class="grid grid-cols-1 xl:grid-cols-2 gap-4"></div>
+        <p id="status" class="text-brand-gray py-10">Loading nominees…</p>
+    </section>
 </main>
 
-<script src="/statics/app.js?v=4"></script>
+<script src="/statics/app.js?v=5"></script>
 <script>
-    lucide.createIcons();
-    
-    let eventData = null;
-    let selectedYear = null;
-    let selectedCat = null;
-    
-    document.addEventListener('DOMContentLoaded', async () => {
-        const params = new URLSearchParams(window.location.search);
-        const eventId = params.get('id');
-        if (!eventId) return document.body.innerHTML = '<h1 style="color:white;text-align:center;margin-top:50px;">No Event ID</h1>';
-        
-        try {
-            const res = await fetch(`/awards/comprehensive/${eventId}`);
-            const data = await res.json();
-            
-            if (data.error) throw new Error(data.error);
-            eventData = data.years;
-            
-            document.getElementById('event-title').textContent = data.event_name;
-            document.title = `${data.event_name} - Yellow Umbrella`;
-            
-            const years = Object.keys(eventData).sort((a,b) => b-a); // Desc
-            if (years.length === 0) {
-                document.getElementById('loading').textContent = "No data yet.";
-                return;
-            }
-            
-            selectedYear = years[0];
-            renderYearMenu(years);
-            renderCatsForYear();
-            
-            document.getElementById('loading').style.display = 'none';
-        } catch (e) {
-            document.getElementById('loading').innerHTML = `<span class="text-red-500">${e.message}</span>`;
-        }
-    });
+    const eventId = new URLSearchParams(location.search).get('id');
+    let years = {};
+    let year = null;
+    let category = null;
 
-    function renderYearMenu(years) {
-        const wrap = document.getElementById('year-menu');
-        wrap.innerHTML = '';
-        years.forEach(y => {
-            const btn = document.createElement('button');
-            btn.className = `px-4 py-2 text-left rounded-lg transition duration-200 whitespace-nowrap ${y === selectedYear ? 'bg-brand-gold text-brand-dark font-bold' : 'text-brand-gray hover:bg-white/10'}`;
-            btn.textContent = y;
-            btn.onclick = () => {
-                selectedYear = y;
-                renderYearMenu(years); // Update active state
-                renderCatsForYear();
-            };
-            wrap.appendChild(btn);
-        });
+    const PHOTO_FALLBACK = 'https://placehold.co/185x278/1f2833/c5c6c7?text=%3F';
+
+    function renderYears() {
+        document.getElementById('year-menu').innerHTML = Object.keys(years)
+            .sort((a, b) => b - a)
+            .map(y => `<button class="chip md:text-left md:rounded-lg ${y === year ? 'is-active' : ''}" data-year="${y}">${y}</button>`)
+            .join('');
+        document.querySelectorAll('[data-year]').forEach(btn => btn.addEventListener('click', () => {
+            year = btn.dataset.year;
+            renderYears();
+            renderCategories();
+        }));
     }
 
-    function renderCatsForYear() {
-        const categoriesData = eventData[selectedYear];
-        const cats = Object.keys(categoriesData).sort();
-        
-        if (cats.length === 0) {
-            document.getElementById('nominees-grid').innerHTML = '<p class="text-brand-gray">No categories found for this year.</p>';
-            return;
-        }
-
-        // Set Best Picture or Best Actor as default ONLY IF a valid category isn't already selected
-        if (!selectedCat || !cats.includes(selectedCat)) {
-            if (cats.includes("Best Picture")) selectedCat = "Best Picture";
-            else if (cats.includes("Best Actor")) selectedCat = "Best Actor";
-            else selectedCat = cats[0];
-        }
-        
-        const navWrap = document.getElementById('cat-nav-wrapper');
-        const nav = document.getElementById('cat-nav');
-        navWrap.classList.remove('hidden');
-        nav.innerHTML = '';
-        
-        cats.forEach(c => {
-            const pill = document.createElement('button');
-            pill.className = `px-6 py-2 rounded-[30px] font-semibold transition whitespace-nowrap border border-brand-gold/30 ${c === selectedCat ? 'bg-brand-gold text-brand-dark' : 'bg-black/50 text-white hover:bg-white/10'}`;
-            pill.textContent = c;
-            pill.onclick = () => {
-                selectedCat = c;
-                renderCatsForYear(); // To update pills active state
-            };
-            nav.appendChild(pill);
-        });
-
-        document.getElementById('viewing-category').textContent = `${selectedYear} Nominees: ${selectedCat}`;
-        document.getElementById('viewing-category').classList.remove('hidden');
-        
+    function renderCategories() {
+        // categories arrive in the server's order (Best Picture first)
+        const cats = Object.keys(years[year]);
+        if (!cats.includes(category)) category = cats[0];
+        document.getElementById('cat-nav').innerHTML = cats.map(c =>
+            `<button class="chip ${c === category ? 'is-active' : ''}" data-cat="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join('');
+        document.querySelectorAll('[data-cat]').forEach(btn => btn.addEventListener('click', () => {
+            category = btn.dataset.cat;
+            renderCategories();
+        }));
         renderNominees();
     }
 
     function renderNominees() {
-        const grid = document.getElementById('nominees-grid');
-        grid.innerHTML = '';
-        
-        const list = eventData[selectedYear][selectedCat];
-        
-        list.forEach(n => {
-            const isWin = n.is_winner;
-            const badge = isWin 
-                ? '<div class="absolute top-2 left-2 bg-green-600 px-3 py-1 text-xs font-bold uppercase rounded z-10 shadow-lg flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Winner</div>' 
-                : '<div class="absolute top-2 left-2 bg-black/60 backdrop-blur px-3 py-1 text-xs font-medium uppercase rounded z-10 shadow border border-white/20 text-brand-gray">Nominee</div>';
-
-            const highlightClass = isWin ? 'border-brand-gold/60 shadow-[0_0_20px_rgba(251,191,36,0.15)] bg-gradient-to-r from-brand-gold/10 to-transparent' : 'border-white/10 bg-black/40 hover:bg-white/5';
-            
-            const card = document.createElement('div');
-            card.className = `relative flex gap-5 md:gap-8 rounded-2xl border p-4 transition duration-300 w-full backdrop-blur-sm ${highlightClass}`;
-            
-            // TMDB Image paths from db
-            let displayPhoto = n.photo;
-            if (displayPhoto && displayPhoto.startsWith('/')) {
-                displayPhoto = 'https://image.tmdb.org/t/p/w500' + displayPhoto;
-            } else if (!displayPhoto || displayPhoto === 'None' || !displayPhoto.startsWith('http')) {
-                displayPhoto = "https://placehold.co/300x450/111111/ffffff?text=" + encodeURIComponent(n.name.split(' ')[0] || '?');
-            }
-            
-            card.innerHTML = `
-                ${badge}
-                <div class="w-[90px] h-[135px] md:w-[120px] md:h-[180px] shrink-0 bg-[#111] rounded-lg overflow-hidden border border-white/10 shadow-lg">
-                    <img src="${displayPhoto}" onerror="this.src='https://placehold.co/300x450/111111/ffffff?text=No+Photo';" class="w-full h-full object-cover">
+        document.getElementById('viewing').innerHTML =
+            `${year} <span class="text-brand-gold">${escapeHtml(category)}</span>`;
+        document.getElementById('nominees').innerHTML = years[year][category].map(n => `
+            <a href="${n.url}" class="group flex gap-4 rounded-2xl border p-3 transition-colors ${n.is_winner
+                ? 'border-brand-gold/60 bg-gradient-to-r from-brand-gold/10 to-transparent'
+                : 'border-white/10 bg-white/[0.03] hover:bg-white/[0.06]'}">
+                <img src="${imageUrl(n.photo, 'w185') || PHOTO_FALLBACK}" alt="" loading="lazy"
+                     onerror="this.onerror=null;this.src='${PHOTO_FALLBACK}'"
+                     class="w-[72px] h-[108px] md:w-[84px] md:h-[126px] rounded-lg object-cover bg-brand-second flex-none">
+                <div class="min-w-0 flex flex-col justify-center">
+                    ${n.is_winner
+                        ? '<span class="self-start mb-2 px-2 py-0.5 rounded bg-brand-gold text-brand-dark text-xs font-bold uppercase">Winner</span>'
+                        : '<span class="self-start mb-2 px-2 py-0.5 rounded border border-white/15 text-brand-gray text-xs uppercase">Nominee</span>'}
+                    <h3 class="text-lg md:text-xl font-bold leading-tight group-hover:text-brand-gold transition-colors">${escapeHtml(n.name)}</h3>
+                    ${n.subtitle ? `<p class="text-sm text-brand-gray mt-1 truncate">${/^\d{4}$/.test(n.subtitle) ? '' : 'for '}${escapeHtml(n.subtitle)}</p>` : ''}
                 </div>
-                <div class="flex flex-col justify-center py-2 flex-1 min-w-0">
-                    <h3 class="text-2xl md:text-3xl font-bold font-outfit truncate ${isWin ? 'text-white drop-shadow' : 'text-gray-200'}">${n.name}</h3>
-                    <p class="text-brand-gray text-base md:text-lg mt-1 tracking-wide truncate flex gap-2 items-center">
-                        <i data-lucide="film" class="w-4 h-4 text-brand-gold opacity-70"></i> 
-                        ${n.subtitle || 'Nominee'}
-                    </p>
-                </div>
-            `;
-            grid.appendChild(card);
-        });
-        
-        lucide.createIcons();
+            </a>`).join('');
     }
+
+    (async () => {
+        const status = document.getElementById('status');
+        if (!eventId) {
+            status.textContent = 'No ceremony selected.';
+            return;
+        }
+        try {
+            const [data, events] = await Promise.all([
+                fetch(`/awards/comprehensive/${eventId}`).then(r => r.json()),
+                fetch('/awards/').then(r => r.json()),
+            ]);
+            if (data.error) throw new Error(data.error);
+
+            const event = events.find(e => String(e.id) === eventId);
+            if (event) document.getElementById('event-image').src = event.imageurl;
+            document.getElementById('event-title').textContent = data.event_name;
+            document.title = `${data.event_name} - YellowUmbrella`;
+
+            years = data.years;
+            const sorted = Object.keys(years).sort((a, b) => b - a);
+            if (!sorted.length) {
+                status.textContent = 'No nominations recorded for this ceremony yet.';
+                return;
+            }
+            status.remove();
+            year = sorted[0];
+            renderYears();
+            renderCategories();
+        } catch (err) {
+            status.textContent = `Couldn't load this ceremony: ${err.message}`;
+        }
+    })();
 </script>
 </body>
 </html>

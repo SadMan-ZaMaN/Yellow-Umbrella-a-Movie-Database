@@ -67,7 +67,8 @@ CREATE TABLE person (
     name        VARCHAR(255) NOT NULL,
     bio         TEXT,
     photourl    VARCHAR(512),
-    birthdate   DATE
+    birthdate   DATE,
+    tmdb_id     INT UNIQUE
 );
 
 CREATE TABLE actor (
@@ -92,13 +93,19 @@ CREATE TABLE media (
     mediaid     SERIAL PRIMARY KEY,
     title       VARCHAR(255) NOT NULL,
     releasedate DATE,
-    avgrating   DECIMAL(4,2),                 -- kept up to date by rating_trigger
+    avgrating   DECIMAL(4,2),                 -- what the site shows, see rating_trigger
     posterurl   VARCHAR(512),
+    backdropurl VARCHAR(512),                 -- wide image for headers / the home slider
     mediatype   VARCHAR(20) DEFAULT 'movie'
                 CHECK (mediatype IN ('movie', 'series', 'anime', 'game')),
-    tmdb_id     INT UNIQUE,
-    tmdb_rating DECIMAL(4,2),
-    overview    TEXT
+    overview    TEXT,
+    -- where the title came from. TMDB numbers movies and TV separately,
+    -- so tmdb_id is only unique within a type (see the indexes below)
+    tmdb_id     INT,
+    rawg_id     INT UNIQUE,                   -- games
+    tmdb_rating DECIMAL(4,2),                 -- TMDB's score (RAWG's for games), out of 10
+    vote_count  INT,                          -- how many votes that score is based on
+    popularity  DECIMAL(10,3)                 -- TMDB popularity / RAWG "added" count
 );
 
 CREATE TABLE movie (
@@ -149,7 +156,8 @@ CREATE TABLE media_nom (
 
 CREATE TABLE person_nom (
     nomid       INT PRIMARY KEY REFERENCES nomination(nominationid) ON DELETE CASCADE,
-    personid    INT NOT NULL REFERENCES person(personid) ON DELETE CASCADE
+    personid    INT NOT NULL REFERENCES person(personid) ON DELETE CASCADE,
+    subtitle    VARCHAR(255)                  -- what they were nominated for, e.g. the film
 );
 
 
@@ -367,3 +375,11 @@ CREATE INDEX idx_event_rsvp_user       ON event_rsvp(userid);
 
 -- no double-booking the same title at the same time
 CREATE UNIQUE INDEX ux_schedule_unique ON schedule(userid, mediaid, scheduledtime);
+
+-- one row per TMDB title. Movies and TV shows are separate id spaces on
+-- TMDB, and a show is stored as either 'series' or 'anime'.
+CREATE UNIQUE INDEX ux_media_tmdb_movie ON media(tmdb_id) WHERE mediatype = 'movie';
+CREATE UNIQUE INDEX ux_media_tmdb_tv    ON media(tmdb_id) WHERE mediatype IN ('series', 'anime');
+
+-- home page / trending fallback sorts by this
+CREATE INDEX idx_media_type_popularity ON media(mediatype, popularity DESC);

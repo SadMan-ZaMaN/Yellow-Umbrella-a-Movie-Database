@@ -6,7 +6,9 @@ __pycache__/
 *.pyc
 .venv/
 venv/
-MyProjectEnv/
+
+# node (only used to build the stylesheet)
+node_modules/
 
 # editors / OS
 .vscode/

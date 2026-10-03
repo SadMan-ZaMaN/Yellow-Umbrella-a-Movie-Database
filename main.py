@@ -4,8 +4,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from routes import (admin, anime, awards, comments, customlists, events, games,
-                    movies, people, reviews, series, stats, users, watchlist)
+from routes import (admin, anime, awards, comments, customlists, discover, events,
+                    games, movies, people, reviews, series, stats, users, watchlist)
 
 app = FastAPI(title="YellowUmbrella API", version="1.0")
 
@@ -30,6 +30,7 @@ app.include_router(comments.router)
 app.include_router(awards.router)
 app.include_router(stats.router)
 app.include_router(admin.router)
+app.include_router(discover.router)
 
 # The frontend is plain HTML/JS, served by the same app. This mount has to
 # come last so it doesn't swallow the API routes above.

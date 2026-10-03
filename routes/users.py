@@ -278,6 +278,21 @@ def guest_login():
     """Guest gets userid=0 — frontend uses this to block write actions."""
     return {"status": "guest", "userid": 0, "username": "Guest"}
 
+# ── Who am I ──────────────────────────────────────────────────
+# Has to sit above /{user_id}, or FastAPI would try to read "me" as an id.
+
+@router.get("/me")
+def who_am_i(current_user: dict = Depends(get_current_user)):
+    """The logged-in user, with their role read fresh from the database."""
+    conn = get_db()
+    try:
+        rows = conn.run("SELECT userid, username, role FROM users WHERE userid=:id;", id=current_user["userid"])
+    finally:
+        conn.close()
+    if not rows:
+        return {"error": "User not found"}
+    return {"userid": rows[0][0], "username": rows[0][1], "role": rows[0][2]}
+
 # ── Profile ───────────────────────────────────────────────────
 
 @router.get("/{user_id}")

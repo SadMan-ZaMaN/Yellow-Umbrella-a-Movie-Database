@@ -5,32 +5,10 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Yellow Umbrella - Sign In</title>
-<link href="/statics/style.css" rel="stylesheet"/>
-
-
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-  tailwind.config = {
-    theme: {
-      extend: {
-        colors: {
-          brand: {
-            dark: '#0B0C10',
-            second: '#1f2833',
-            gold: '#fbbf24',
-            goldhover: '#f59e0b',
-            red: '#d97706',
-            gray: '#c5c6c7'
-          }
-        },
-        fontFamily: {
-          inter: ['Inter', 'sans-serif'],
-          outfit: ['Outfit', 'sans-serif'],
-        }
-      }
-    }
-  }
-</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Outfit:wght@500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="/statics/site.css?v=5" rel="stylesheet"/>
 </head>
 <body class="bg-brand-dark text-white min-h-screen flex flex-col items-center justify-center font-sans relative">
 <!-- Dynamic Background Gradient -->
@@ -40,7 +18,7 @@
 <a class="font-outfit text-3xl font-extrabold text-brand-gold tracking-wide absolute top-[30px] left-[30px] z-20 drop-shadow-[0_0_15px_rgba(251,191,36,0.8)] hover:scale-105 transition-transform" href="/">Yellow<span style="color: white; text-shadow: 0 0 10px rgba(255,255,255,0.8);">Umbrella</span></a>
 
 <!-- Auth Container -->
-<div class="z-10 bg-black/60 backdrop-blur-2xl border border-white/10 border-t-white/20 rounded-[24px] p-[40px] shadow-[0_20px_50px_0_rgba(0,0,0,0.7)] w-full max-w-[480px] text-left transform transition-all duration-500 hover:shadow-[0_20px_60px_0_rgba(251,191,36,0.15)] mx-4">
+<div class="z-10 bg-black/60 border border-white/10 border-t-white/20 rounded-[24px] p-[40px] shadow-[0_20px_50px_0_rgba(0,0,0,0.7)] w-full max-w-[480px] text-left transform transition-all duration-500 hover:shadow-[0_20px_60px_0_rgba(251,191,36,0.15)] mx-4">
 <!-- Toggle Tabs -->
 <div class="flex border-b border-white/10 mb-[30px]">
 <div class="tab active flex-1 text-center p-[15px] cursor-pointer text-brand-gold border-b-[2px] border-brand-gold font-semibold transition" id="tab-login">Sign In</div>
@@ -105,7 +83,7 @@
 </div>
 
 <!-- Scripts -->
-<script src="/statics/app.js?v=4"></script>
+<script src="/statics/app.js?v=5"></script>
 <script>
         // Redirect if already logged in
         if (isLoggedIn()) {

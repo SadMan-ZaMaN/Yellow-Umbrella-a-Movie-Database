@@ -1,0 +1,12 @@
+{
+  "name": "yellowumbrella",
+  "private": true,
+  "description": "Only used to build the stylesheet; the app itself is Python.",
+  "scripts": {
+    "build:css": "tailwindcss -i frontend/statics/css/input.css -o frontend/statics/site.css --minify",
+    "watch:css": "tailwindcss -i frontend/statics/css/input.css -o frontend/statics/site.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.17"
+  }
+}

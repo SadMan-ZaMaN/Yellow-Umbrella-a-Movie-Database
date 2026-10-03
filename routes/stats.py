@@ -6,18 +6,24 @@ from database import get_db
 router = APIRouter(prefix="/stats", tags=["Stats & Analytics"])
 
 # ── Uses DB Function: get_top_rated_media ────────────────────
-@router.get("/top-rated")
-def get_top_rated(limit: int = 10):
-    """Top rated movies/series/anime/games by avgrating"""
+# Ranked by IMDb-style weighted rating, see sql/functions.sql
+
+def _top_rated(mediatype, limit):
     conn = get_db()
     try:
         rows = conn.run(
-            "SELECT * FROM get_top_rated_media(:l);", l=limit)
+            "SELECT * FROM get_top_rated_media(:l, CAST(:t AS VARCHAR));", l=min(limit, 100), t=mediatype)
         return [{"id": r[0], "title": r[1],
                  "avgrating": float(r[2]) if r[2] else None,
                  "type": r[3], "posterurl": r[4]} for r in rows]
     finally:
         conn.close()
+
+
+@router.get("/top-rated")
+def get_top_rated(limit: int = 10):
+    """Top rated titles of any type"""
+    return _top_rated(None, limit)
 
 # ── Uses DB Function: get_most_reviewed ──────────────────────
 @router.get("/most-reviewed")
@@ -33,31 +39,12 @@ def get_most_reviewed(limit: int = 10):
     finally:
         conn.close()
 
-# ── Complex query: top rated by media type ───────────────────
 @router.get("/top-rated/{mediatype}")
 def get_top_rated_by_type(mediatype: str, limit: int = 10):
     """Top rated filtered by type — movie, series, anime, game"""
     if mediatype not in ("movie", "series", "anime", "game"):
         return {"error": "mediatype must be movie, series, anime or game"}
-    conn = get_db()
-    try:
-        rows = conn.run(
-            """SELECT mediaid, title, avgrating, posterurl
-               FROM media
-               WHERE CASE 
-                    WHEN EXISTS (SELECT 1 FROM movie WHERE movieid = media.mediaid) THEN 'movie'
-                    WHEN EXISTS (SELECT 1 FROM series WHERE seriesid = media.mediaid) THEN 'series'
-                    WHEN EXISTS (SELECT 1 FROM anime WHERE animeid = media.mediaid) THEN 'anime'
-                    WHEN EXISTS (SELECT 1 FROM game WHERE gameid = media.mediaid) THEN 'game'
-                    ELSE 'unknown'
-                END = :mt AND avgrating IS NOT NULL
-               ORDER BY avgrating DESC
-               LIMIT :l;""", mt=mediatype, l=limit)
-        return [{"id": r[0], "title": r[1],
-                 "avgrating": float(r[2]) if r[2] else None,
-                 "posterurl": r[3]} for r in rows]
-    finally:
-        conn.close()
+    return _top_rated(mediatype, limit)
 
 # ── Complex query: most active users ─────────────────────────
 @router.get("/most-active-users")

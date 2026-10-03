@@ -1,76 +1,68 @@
+"""
+Adds award nominations by hand, for anything import_awards doesn't cover.
+
+Fill in the lists below with ids from our database (the number in a page's
+URL, e.g. /movie.html?id=161) and run:
+
+    python -m scripts.add_nominations
+"""
 from database import get_db
 
-# =======================================================
-# 🏆 BULK AWARDS SEEDER 🏆
-# Put your IDs here and run `python -m scripts.add_nominations`
-# =======================================================
+EVENT = "Academy Awards (Oscars)"     # must match a row in award_event
+YEAR = 2024                           # ceremony year
 
-# Which event to populate? 
-# 1=Oscars, 2=Golden Globes, 3=BAFTA, 4=Cannes, 5=Emmy
-EVENT_ID = 1
-YEAR = 2024
-
-# --- 🎬 MEDIA NOMINATIONS (Movies, Series, Anime, Games) ---
-# Format: (Media ID, Category Name, Is Winner)
+# (media id, category, won?)
 MEDIA_NOMINEES = [
-    (173, "Best Picture", True),        # Example: Manchester Death Warrant (Wins)
-    (175, "Best Picture", False),       # Example: It Was Showering In Manchest (Nominated)
-    # Add your real IDs below:
-    # (12345, "Best Original Score", False),
-    # (67890, "Best Animated Feature", True),
+    # (161, "Best Picture", True),
 ]
 
-# --- 🎭 PERSON NOMINATIONS (Actors, Directors) ---
-# Format: (Person ID, Category Name, Is Winner)
+# (person id, category, what they were nominated for, won?)
 PERSON_NOMINEES = [
-    (312, "Best Actress", True),        # Example: Sky Katz (Wins)
-    (129, "Best Supporting Actor", False), # Example: Maia Kealoha (Nominated)
-    # Add your real IDs below:
-    # (99999, "Best Director", True),
+    # (707, "Best Actor", "Oppenheimer", True),
 ]
 
-# =======================================================
-# DO NOT EDIT BELOW THIS LINE
-# =======================================================
 
-def get_or_create_category(conn, category_name):
-    # Ensure category exists and return its ID
-    rows = conn.run("SELECT categoryid FROM award_category WHERE name = :n", n=category_name)
-    if rows: return rows[0][0]
-    
-    conn.run("INSERT INTO award_category (name) VALUES (:n)", n=category_name)
-    return conn.run("SELECT categoryid FROM award_category WHERE name = :n", n=category_name)[0][0]
+def category_id(conn, name):
+    rows = conn.run("SELECT categoryid FROM award_category WHERE name = :n;", n=name)
+    if rows:
+        return rows[0][0]
+    return conn.run("INSERT INTO award_category (name) VALUES (:n) RETURNING categoryid;", n=name)[0][0]
+
+
+def nominate(conn, event_id, category, won):
+    return conn.run(
+        """INSERT INTO nomination (eventid, categoryid, year, iswinner)
+           VALUES (:e, :c, :y, :w) RETURNING nominationid;""",
+        e=event_id, c=category_id(conn, category), y=YEAR, w=won)[0][0]
+
 
 def main():
+    if not MEDIA_NOMINEES and not PERSON_NOMINEES:
+        print("Nothing to add - fill in MEDIA_NOMINEES / PERSON_NOMINEES first.")
+        return
     conn = get_db()
     try:
+        event = conn.run("SELECT eventid FROM award_event WHERE name = :n;", n=EVENT)
+        if not event:
+            print(f"No award event called {EVENT!r}")
+            return
         conn.run("BEGIN")
-        
-        # Insert Media
-        for media_id, cat_name, is_winner in MEDIA_NOMINEES:
-            cat_id = get_or_create_category(conn, cat_name)
-            conn.run("INSERT INTO nomination (eventid, categoryid, year, iswinner) VALUES (:e, :c, :y, :w)", 
-                     e=EVENT_ID, c=cat_id, y=YEAR, w=is_winner)
-            nom_id = conn.run("SELECT MAX(nominationid) FROM nomination")[0][0]
-            conn.run("INSERT INTO media_nom (nomid, mediaid) VALUES (:n, :m)", n=nom_id, m=media_id)
-            print(f"🎬 Added Media ID {media_id} -> {cat_name} ({'Winner' if is_winner else 'Nominee'})")
-
-        # Insert People
-        for person_id, cat_name, is_winner in PERSON_NOMINEES:
-            cat_id = get_or_create_category(conn, cat_name)
-            conn.run("INSERT INTO nomination (eventid, categoryid, year, iswinner) VALUES (:e, :c, :y, :w)", 
-                     e=EVENT_ID, c=cat_id, y=YEAR, w=is_winner)
-            nom_id = conn.run("SELECT MAX(nominationid) FROM nomination")[0][0]
-            conn.run("INSERT INTO person_nom (nomid, personid) VALUES (:n, :p)", n=nom_id, p=person_id)
-            print(f"🎭 Added Person ID {person_id} -> {cat_name} ({'Winner' if is_winner else 'Nominee'})")
-
+        for mediaid, category, won in MEDIA_NOMINEES:
+            nomid = nominate(conn, event[0][0], category, won)
+            conn.run("INSERT INTO media_nom (nomid, mediaid) VALUES (:n, :m);", n=nomid, m=mediaid)
+            print(f"  media #{mediaid} -> {category}{' (winner)' if won else ''}")
+        for personid, category, subtitle, won in PERSON_NOMINEES:
+            nomid = nominate(conn, event[0][0], category, won)
+            conn.run("INSERT INTO person_nom (nomid, personid, subtitle) VALUES (:n, :p, :s);",
+                     n=nomid, p=personid, s=subtitle)
+            print(f"  person #{personid} -> {category}{' (winner)' if won else ''}")
         conn.run("COMMIT")
-        print("\n✅ Bulk upload complete! Check your website.")
-    except Exception as e:
+    except Exception:
         conn.run("ROLLBACK")
-        print("❌ Error during bulk upload:", e)
+        raise
     finally:
         conn.close()
+
 
 if __name__ == "__main__":
     main()

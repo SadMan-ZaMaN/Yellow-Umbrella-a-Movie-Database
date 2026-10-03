@@ -1,278 +1,437 @@
 """
 Pulls titles and people from TMDB (movies, TV, anime) and RAWG (games) and
-saves them into our schema. The search routes call this when a query has
-no hits in the local database, so the catalogue grows as people search.
+saves them into our schema.
+
+Nothing is imported while you search. A title is only saved when someone
+opens it (see /open in routes/discover.py) or a script imports it, so the
+database doesn't fill up with whatever happened to match a half-typed query.
 """
 import os
+import threading
+import time
 
 import requests
 from dotenv import load_dotenv
 
 load_dotenv()
 
-TMDB_BASE   = "https://api.themoviedb.org/3"
-RAWG_BASE   = "https://api.rawg.io/api"
-POSTER_BASE = "https://image.tmdb.org/t/p/w500"
-HEADERS     = {
+TMDB_BASE     = "https://api.themoviedb.org/3"
+RAWG_BASE     = "https://api.rawg.io/api"
+IMAGE_BASE    = "https://image.tmdb.org/t/p"
+POSTER_BASE   = f"{IMAGE_BASE}/w500"
+HEADERS       = {
     "Authorization": f"Bearer {os.getenv('TMDB_TOKEN')}",
     "accept": "application/json"
 }
 
-def tmdb_get(path, params=None):
-    res = requests.get(f"{TMDB_BASE}/{path}", headers=HEADERS, params=params, timeout=15)
-    res.raise_for_status()
-    return res.json()
+ANIMATION_GENRE = 16   # TMDB's id for "Animation"
 
-# ── Helpers ──────────────────────────────────────────────────
+
+# ── HTTP with a small in-memory cache ────────────────────────
+# Search-as-you-type and the home page ask for the same things over and
+# over, so successful responses can be kept for `ttl` seconds.
+
+_cache = {}
+_cache_lock = threading.Lock()
+
+
+def _get_json(url, params, headers, ttl):
+    key = (url, tuple(sorted((params or {}).items())))
+    now = time.time()
+    if ttl:
+        with _cache_lock:
+            hit = _cache.get(key)
+            if hit and hit[0] > now:
+                return hit[1]
+
+    # RAWG in particular times out or 502s when it's busy - retry a couple of times
+    for attempt in range(3):
+        try:
+            res = requests.get(url, headers=headers, params=params, timeout=15)
+            if res.status_code < 500:
+                break
+        except (requests.Timeout, requests.ConnectionError) as e:
+            if attempt == 2:
+                # the message would include the URL, and with it the API key
+                raise requests.RequestException(f"{url.split('?')[0]}: {type(e).__name__}") from None
+        time.sleep(1 + attempt * 2)
+    if not res.ok:
+        raise requests.HTTPError(f"{res.status_code} from {url.split('?')[0]}")
+    data = res.json()
+
+    if ttl:
+        with _cache_lock:
+            if len(_cache) > 1000:
+                _cache.clear()
+            _cache[key] = (now + ttl, data)
+    return data
+
+
+def tmdb_get(path, params=None, ttl=0):
+    return _get_json(f"{TMDB_BASE}/{path}", params, HEADERS, ttl)
+
+
+def rawg_get(path, params=None, ttl=0):
+    params = {**(params or {}), "key": os.getenv("RAWG_KEY")}
+    return _get_json(f"{RAWG_BASE}/{path}", params, None, ttl)
+
+
+def tmdb_image(path, size="w500"):
+    return f"{IMAGE_BASE}/{size}{path}" if path else None
+
+
+def is_anime(show: dict) -> bool:
+    """Japanese animated TV. Works on both search results and full details."""
+    genre_ids = show.get("genre_ids") or [g["id"] for g in show.get("genres", [])]
+    japanese = "JP" in (show.get("origin_country") or []) or show.get("original_language") == "ja"
+    return ANIMATION_GENRE in genre_ids and japanese
+
+
+# ── Lookups ──────────────────────────────────────────────────
+
+def find_media(conn, kind: str, ext_id: int):
+    """Local mediaid for a TMDB movie/tv id or a RAWG game id, or None."""
+    if kind == "movie":
+        rows = conn.run("SELECT mediaid FROM media WHERE mediatype='movie' AND tmdb_id=:id;", id=ext_id)
+    elif kind == "tv":
+        rows = conn.run("SELECT mediaid FROM media WHERE mediatype IN ('series','anime') AND tmdb_id=:id;", id=ext_id)
+    elif kind == "game":
+        rows = conn.run("SELECT mediaid FROM media WHERE rawg_id=:id;", id=ext_id)
+    else:
+        raise ValueError(kind)
+    return rows[0][0] if rows else None
+
+
+def _find_legacy(conn, title, year, mediatypes):
+    """(mediaid, mediatype) of a row saved before we kept external ids,
+    matched on title + year, or (None, None)."""
+    rows = conn.run(
+        """SELECT mediaid, mediatype FROM media
+           WHERE tmdb_id IS NULL AND rawg_id IS NULL
+             AND mediatype = ANY(:mtypes)
+             AND LOWER(title) = LOWER(:t)
+             AND (releasedate IS NULL OR :y = '' OR EXTRACT(YEAR FROM releasedate)::text = :y)
+           ORDER BY mediaid LIMIT 1;""",
+        mtypes=list(mediatypes), t=title, y=year or "")
+    return (rows[0][0], rows[0][1]) if rows else (None, None)
+
+
+def _atomic(conn, work):
+    conn.run("BEGIN")
+    try:
+        result = work()
+        conn.run("COMMIT")
+        return result
+    except Exception:
+        conn.run("ROLLBACK")
+        raise
+
+
+# ── Shared bits ──────────────────────────────────────────────
+
 def ensure_genre(conn, name):
     rows = conn.run("SELECT genreid FROM genre WHERE genrename=:n;", n=name)
     if rows:
         return rows[0][0]
-    conn.run("INSERT INTO genre (genrename) VALUES (:n);", n=name)
-    return conn.run("SELECT genreid FROM genre WHERE genrename=:n;", n=name)[0][0]
+    return conn.run("INSERT INTO genre (genrename) VALUES (:n) RETURNING genreid;", n=name)[0][0]
+
 
 def ensure_person(conn, tmdb_person):
-    name = tmdb_person.get("name", "Unknown")
-    profile_path = tmdb_person.get("profile_path")
-    photourl = f"{POSTER_BASE}{profile_path}" if profile_path else None
-    
-    rows = conn.run("SELECT personid FROM person WHERE name=:n;", n=name)
+    """personid for someone from a TMDB credits list, creating them if needed."""
+    name     = tmdb_person.get("name", "Unknown")
+    tmdb_id  = tmdb_person.get("id")
+    photourl = tmdb_image(tmdb_person.get("profile_path"))
+
+    if tmdb_id:
+        rows = conn.run("SELECT personid FROM person WHERE tmdb_id=:id;", id=tmdb_id)
+        if rows:
+            return rows[0][0]
+
+    rows = conn.run("SELECT personid FROM person WHERE name=:n AND tmdb_id IS NULL ORDER BY personid LIMIT 1;", n=name)
     if rows:
-        # Update existing person's photourl if it was missing but we now have it
-        if photourl:
-            conn.run("UPDATE person SET photourl = :u WHERE personid = :id AND (photourl IS NULL OR photourl = 'None');", u=photourl, id=rows[0][0])
+        conn.run("""UPDATE person SET tmdb_id = :tid,
+                        photourl = COALESCE(NULLIF(NULLIF(photourl, ''), 'None'), :u)
+                    WHERE personid = :id;""", tid=tmdb_id, u=photourl, id=rows[0][0])
         return rows[0][0]
-        
-    conn.run("INSERT INTO person (name, photourl) VALUES (:n, :u);", n=name, u=photourl)
-    return conn.run("SELECT personid FROM person WHERE name=:n;", n=name)[0][0]
 
-# ── Auto-import a movie from TMDB ────────────────────────────
-def fetch_and_save_movie(conn, tmdb_id):
-    data    = tmdb_get(f"movie/{tmdb_id}")
-    credits = tmdb_get(f"movie/{tmdb_id}/credits")
-    title   = data.get("title", "Unknown")
+    return conn.run(
+        "INSERT INTO person (name, photourl, tmdb_id) VALUES (:n, :u, :tid) RETURNING personid;",
+        n=name, u=photourl, tid=tmdb_id)[0][0]
 
-    # Double-check not already in DB
-    existing = conn.run("SELECT mediaid FROM media WHERE title=:t;", t=title)
-    if existing:
-        return existing[0][0]
 
-    releasedate = data.get("release_date") or None
-    posterurl   = f"{POSTER_BASE}{data['poster_path']}" if data.get("poster_path") else None
-    avgrating   = data.get("vote_average") or None
-    durationmin = data.get("runtime") or None
-    boxoffice   = data.get("revenue") or None
-    if boxoffice == 0:
-        boxoffice = None
-
-    conn.run(
-        "INSERT INTO media (title, releasedate, posterurl, avgrating, mediatype) VALUES (:t, :r, :p, :a, 'movie');",
-        t=title, r=releasedate, p=posterurl, a=avgrating)
-    mediaid = conn.run("SELECT mediaid FROM media WHERE title=:t;", t=title)[0][0]
-    conn.run(
-        "INSERT INTO movie (movieid, durationmin, boxoffice) VALUES (:id, :d, :b);",
-        id=mediaid, d=durationmin, b=boxoffice)
-
-    for g in data.get("genres", []):
-        gid = ensure_genre(conn, g["name"])
+def _set_genres(conn, mediaid, genres):
+    for g in genres:
         conn.run("INSERT INTO media_genre (mediaid, genreid) VALUES (:m, :g) ON CONFLICT DO NOTHING;",
-                 m=mediaid, g=gid)
+                 m=mediaid, g=ensure_genre(conn, g["name"]))
 
-    for member in credits.get("cast", [])[:10]:
+
+def _set_credits(conn, mediaid, cast, directors):
+    for member in cast[:10]:
         pid = ensure_person(conn, member)
-        if not conn.run("SELECT 1 FROM actor WHERE actorid=:id;", id=pid):
-            conn.run("INSERT INTO actor (actorid) VALUES (:id);", id=pid)
+        conn.run("INSERT INTO actor (actorid) VALUES (:id) ON CONFLICT DO NOTHING;", id=pid)
         conn.run(
-            "INSERT INTO cast_member (mediaid, actorid, rolename, billingorder) VALUES (:m, :a, :r, :b) ON CONFLICT DO NOTHING;",
+            """INSERT INTO cast_member (mediaid, actorid, rolename, billingorder)
+               VALUES (:m, :a, :r, :b) ON CONFLICT DO NOTHING;""",
             m=mediaid, a=pid, r=member.get("character", ""), b=member.get("order", 0) + 1)
 
-    for crew in credits.get("crew", []):
-        if crew.get("job") == "Director":
-            pid = ensure_person(conn, crew)
-            if not conn.run("SELECT 1 FROM director WHERE directorid=:id;", id=pid):
-                conn.run("INSERT INTO director (directorid) VALUES (:id);", id=pid)
-            conn.run(
-                "INSERT INTO media_director (mediaid, directorid) VALUES (:m, :d) ON CONFLICT DO NOTHING;",
-                m=mediaid, d=pid)
+    for person in directors:
+        pid = ensure_person(conn, person)
+        conn.run("INSERT INTO director (directorid) VALUES (:id) ON CONFLICT DO NOTHING;", id=pid)
+        conn.run("INSERT INTO media_director (mediaid, directorid) VALUES (:m, :d) ON CONFLICT DO NOTHING;",
+                 m=mediaid, d=pid)
 
-    fetch_and_save_trailers(conn, mediaid, tmdb_id, media_type="movie")     # fetch trailers for this movie
-    print(f"[auto-import] movie saved: {title}")
+
+def _set_trailers(conn, mediaid, videos):
+    """Up to 3 YouTube trailers, as embed links."""
+    trailers = [v for v in videos if v.get("site") == "YouTube" and v.get("type") == "Trailer"]
+    for num, video in enumerate(trailers[:3], start=1):
+        conn.run(
+            """INSERT INTO trailer (mediaid, trailernum, title, url) VALUES (:m, :n, :t, :u)
+               ON CONFLICT (mediaid, trailernum) DO NOTHING;""",
+            m=mediaid, n=num, t=video.get("name", "Official Trailer"),
+            u=f"https://www.youtube.com/embed/{video['key']}")
+
+
+def save_media(conn, mediaid, fields):
+    """Insert a new media row (mediaid None) or refresh an existing one."""
+    if mediaid is None:
+        cols = ", ".join(fields)
+        vals = ", ".join(f":{k}" for k in fields)
+        return conn.run(
+            f"INSERT INTO media ({cols}, avgrating) VALUES ({vals}, :tmdb_rating) RETURNING mediaid;",
+            **fields)[0][0]
+
+    # keep the existing title and type, refresh everything else
+    fields = {k: v for k, v in fields.items() if k not in ("title", "mediatype")}
+    sets = ", ".join(f"{k} = :{k}" for k in fields if k != "releasedate")
+    conn.run(f"""UPDATE media SET {sets}, releasedate = COALESCE(releasedate, :releasedate)
+                 WHERE mediaid = :mediaid;""", mediaid=mediaid, **fields)
+    # re-blend with our reviews (sql/functions.sql)
+    conn.run("SELECT refresh_avg_rating(:id);", id=mediaid)
     return mediaid
 
-# ── Auto-import a series/anime from TMDB ─────────────────────
-def fetch_and_save_series(conn, tmdb_id, mediatype="series"):
-    data  = tmdb_get(f"tv/{tmdb_id}")
-    title = data.get("name", "Unknown")
 
-    existing = conn.run("SELECT mediaid FROM media WHERE title=:t;", t=title)
+def _import(conn, kind, ext_id, fetch, store):
+    """Common shape of every import: return the local row if we have it,
+    otherwise fetch from the API and store it in a single transaction."""
+    existing = find_media(conn, kind, ext_id)
     if existing:
-        return existing[0][0]
-
-    releasedate  = data.get("first_air_date") or None
-    posterurl    = f"{POSTER_BASE}{data['poster_path']}" if data.get("poster_path") else None
-    avgrating    = data.get("vote_average") or None
-    totalseasons = data.get("number_of_seasons") or None
-    tmdb_status  = data.get("status", "")
-    status = ("Ongoing"  if tmdb_status == "Returning Series" else
-              "Ended"    if tmdb_status == "Ended"            else
-              "Canceled" if tmdb_status == "Canceled"         else None)
-
-    conn.run(
-        "INSERT INTO media (title, releasedate, posterurl, avgrating, mediatype) VALUES (:t, :r, :p, :a, :mt);",
-        t=title, r=releasedate, p=posterurl, a=avgrating, mt=mediatype)
-    mediaid = conn.run("SELECT mediaid FROM media WHERE title=:t;", t=title)[0][0]
-
-    credits = tmdb_get(f"tv/{tmdb_id}/credits")
-
-    if mediatype == "anime":
-        studio = data.get("production_companies", [{}])[0].get("name") if data.get("production_companies") else None
-        conn.run(
-            "INSERT INTO anime (animeid, totalseasons, totalepisodes, studio_name, status) VALUES (:id, :ts, :te, :sn, :st);",
-            id=mediaid, ts=totalseasons,
-            te=data.get("number_of_episodes"),
-            sn=studio, st=status)
-    else:
-        conn.run(
-            "INSERT INTO series (seriesid, totalseasons, status) VALUES (:id, :ts, :st);",
-            id=mediaid, ts=totalseasons, st=status)
-
-    for g in data.get("genres", []):
-        gid = ensure_genre(conn, g["name"])
-        conn.run("INSERT INTO media_genre (mediaid, genreid) VALUES (:m, :g) ON CONFLICT DO NOTHING;",
-                 m=mediaid, g=gid)
-
-    for member in credits.get("cast", [])[:10]:
-        pid = ensure_person(conn, member)
-        if not conn.run("SELECT 1 FROM actor WHERE actorid=:id;", id=pid):
-            conn.run("INSERT INTO actor (actorid) VALUES (:id);", id=pid)
-        conn.run(
-            "INSERT INTO cast_member (mediaid, actorid, rolename, billingorder) VALUES (:m, :a, :r, :b) ON CONFLICT DO NOTHING;",
-            m=mediaid, a=pid, r=member.get("character", ""), b=member.get("order", 0) + 1)
-
-    for crew in credits.get("crew", []):
-        if crew.get("job") == "Executive Producer" or crew.get("job") == "Director":
-            pid = ensure_person(conn, crew)
-            if not conn.run("SELECT 1 FROM director WHERE directorid=:id;", id=pid):
-                conn.run("INSERT INTO director (directorid) VALUES (:id);", id=pid)
-            conn.run(
-                "INSERT INTO media_director (mediaid, directorid) VALUES (:m, :d) ON CONFLICT DO NOTHING;",
-                m=mediaid, d=pid)
-
-    fetch_and_save_trailers(conn, mediaid, tmdb_id, media_type="tv")    # fetch trailers for this series/anime
-    print(f"[auto-import] {mediatype} saved: {title}")
-    return mediaid
-
-# ── Auto-import a person from TMDB ───────────────────────────
-def fetch_and_save_person(conn, tmdb_id):
-    data = tmdb_get(f"person/{tmdb_id}")
-    name = data.get("name", "Unknown")
-
-    existing = conn.run("SELECT personid FROM person WHERE name=:n;", n=name)
-    if existing:
-        return existing[0][0]
-
-    bio      = data.get("biography") or None
-    photourl = f"{POSTER_BASE}{data['profile_path']}" if data.get("profile_path") else None
-    birthday = data.get("birthday") or None
-
-    conn.run(
-        "INSERT INTO person (name, bio, photourl, birthdate) VALUES (:n, :b, :p, :bd);",
-        n=name, b=bio, p=photourl, bd=birthday)
-    personid = conn.run("SELECT personid FROM person WHERE name=:n;", n=name)[0][0]
-
-    known_for = data.get("known_for_department", "")
-    if known_for == "Acting":
-        conn.run("INSERT INTO actor (actorid) VALUES (:id) ON CONFLICT DO NOTHING;", id=personid)
-    elif known_for == "Directing":
-        conn.run("INSERT INTO director (directorid) VALUES (:id) ON CONFLICT DO NOTHING;", id=personid)
-
-    print(f"[auto-import] person saved: {name}")
-    return personid
-
-# ── Auto-import a game from RAWG ─────────────────────────────
-def fetch_and_save_game(conn, rawg_id):
-    res  = requests.get(f"{RAWG_BASE}/games/{rawg_id}",
-                        params={"key": os.getenv("RAWG_KEY")}, timeout=15)
-    data = res.json()
-    title = data.get("name", "Unknown")
-
-    existing = conn.run("SELECT mediaid FROM media WHERE title=:t;", t=title)
-    if existing:
-        return existing[0][0]
-
-    releasedate = data.get("released") or None
-    posterurl   = data.get("background_image") or None
-    avgrating   = data.get("rating") or None
-    platforms   = ", ".join([p["platform"]["name"] for p in data.get("platforms", [])[:5]])
-    developer   = data.get("developers", [{}])[0].get("name") if data.get("developers") else None
-    publisher   = data.get("publishers", [{}])[0].get("name") if data.get("publishers") else None
-
-    conn.run(
-        "INSERT INTO media (title, releasedate, posterurl, avgrating, mediatype) VALUES (:t, :r, :p, :a, 'game');",
-        t=title, r=releasedate, p=posterurl, a=avgrating)
-    mediaid = conn.run("SELECT mediaid FROM media WHERE title=:t;", t=title)[0][0]
-    conn.run(
-        "INSERT INTO game (gameid, developer, publisher, platform) VALUES (:id, :dev, :pub, :pl);",
-        id=mediaid, dev=developer, pub=publisher, pl=platforms)
-
-    for g in data.get("genres", []):
-        gid = ensure_genre(conn, g["name"])
-        conn.run("INSERT INTO media_genre (mediaid, genreid) VALUES (:m, :g) ON CONFLICT DO NOTHING;",
-                 m=mediaid, g=gid)
-
-    # Fetch trailers (movies) for game
+        return existing
+    data = fetch()
     try:
-        movie_res = requests.get(f"{RAWG_BASE}/games/{rawg_id}/movies",
-                                 params={"key": os.getenv("RAWG_KEY")}, timeout=15)
-        movie_data = movie_res.json()
-        trailernum = 1
-        for video in movie_data.get("results", []):
-            url = video.get("data", {}).get("max") or video.get("data", {}).get("480")
-            if url:
-                existing = conn.run(
-                    "SELECT 1 FROM trailer WHERE mediaid=:m AND trailernum=:n;",
-                    m=mediaid, n=trailernum)
-                if not existing:
-                    conn.run(
-                        "INSERT INTO trailer (mediaid, trailernum, title, url) VALUES (:m, :n, :t, :u);",
-                        m=mediaid, n=trailernum,
-                        t=video.get("name", "Game Trailer"),
-                        u=url)
-                trailernum += 1
-                if trailernum > 3:  # max 3 trailers
-                    break
-    except Exception as e:
-        print(f"[trailer fetch error] {e}")
-
-    print(f"[auto-import] game saved: {title}")
-    return mediaid
+        return _atomic(conn, lambda: store(data))
+    except Exception:
+        # two requests importing the same title at once - the other one won
+        existing = find_media(conn, kind, ext_id)
+        if existing:
+            return existing
+        raise
 
 
-def fetch_and_save_trailers(conn, mediaid, tmdb_id, media_type="movie"):
-    """Fetch trailer from TMDB and save YouTube link to trailer table"""
-    try:
-        if media_type == "movie":
-            data = tmdb_get(f"movie/{tmdb_id}/videos")
+# ── Movies ───────────────────────────────────────────────────
+
+def movie_fields(d):
+    return {
+        "title":       d.get("title") or "Unknown",
+        "releasedate": d.get("release_date") or None,
+        "posterurl":   tmdb_image(d.get("poster_path")),
+        "backdropurl": tmdb_image(d.get("backdrop_path"), "w1280"),
+        "overview":    d.get("overview") or None,
+        "mediatype":   "movie",
+        "tmdb_id":     d["id"],
+        "tmdb_rating": round(d["vote_average"], 2) if d.get("vote_count") else None,
+        "vote_count":  d.get("vote_count") or 0,
+        "popularity":  d.get("popularity"),
+    }
+
+
+def import_movie(conn, tmdb_id):
+    def fetch():
+        return tmdb_get(f"movie/{tmdb_id}", {"append_to_response": "credits,videos"})
+
+    def store(d):
+        fields = movie_fields(d)
+        mediaid, _ = _find_legacy(conn, fields["title"], (fields["releasedate"] or "")[:4], ["movie"])
+        mediaid = save_media(conn, mediaid, fields)
+        conn.run(
+            """INSERT INTO movie (movieid, durationmin, boxoffice) VALUES (:id, :d, :b)
+               ON CONFLICT (movieid) DO UPDATE
+               SET durationmin = EXCLUDED.durationmin, boxoffice = EXCLUDED.boxoffice;""",
+            id=mediaid, d=d.get("runtime") or None, b=d.get("revenue") or None)
+        _set_genres(conn, mediaid, d.get("genres", []))
+        crew = d.get("credits", {}).get("crew", [])
+        _set_credits(conn, mediaid, d.get("credits", {}).get("cast", []),
+                     [c for c in crew if c.get("job") == "Director"])
+        _set_trailers(conn, mediaid, d.get("videos", {}).get("results", []))
+        print(f"[import] movie: {fields['title']}")
+        return mediaid
+
+    return _import(conn, "movie", tmdb_id, fetch, store)
+
+
+# ── Series and anime ─────────────────────────────────────────
+
+def _tv_status(s):
+    return {"Returning Series": "Ongoing", "Ended": "Ended", "Canceled": "Canceled"}.get(s)
+
+
+def tv_fields(d, mediatype):
+    return {
+        "title":       d.get("name") or "Unknown",
+        "releasedate": d.get("first_air_date") or None,
+        "posterurl":   tmdb_image(d.get("poster_path")),
+        "backdropurl": tmdb_image(d.get("backdrop_path"), "w1280"),
+        "overview":    d.get("overview") or None,
+        "mediatype":   mediatype,
+        "tmdb_id":     d["id"],
+        "tmdb_rating": round(d["vote_average"], 2) if d.get("vote_count") else None,
+        "vote_count":  d.get("vote_count") or 0,
+        "popularity":  d.get("popularity"),
+    }
+
+
+def import_tv(conn, tmdb_id, mediatype=None):
+    """Imports a TV show as 'series' or 'anime' (decided from TMDB if not given)."""
+    def fetch():
+        return tmdb_get(f"tv/{tmdb_id}", {"append_to_response": "credits,videos"})
+
+    def store(d):
+        title = d.get("name") or "Unknown"
+        mediaid, existing_type = _find_legacy(conn, title, (d.get("first_air_date") or "")[:4],
+                                              ["series", "anime"])
+        # an existing row keeps its type, it already sits in that child table
+        kind = existing_type or mediatype or ("anime" if is_anime(d) else "series")
+        fields = tv_fields(d, kind)
+        mediaid = save_media(conn, mediaid, fields)
+        status = _tv_status(d.get("status"))
+
+        if kind == "anime":
+            studio = (d.get("production_companies") or [{}])[0].get("name")
+            conn.run(
+                """INSERT INTO anime (animeid, totalseasons, totalepisodes, studio_name, status)
+                   VALUES (:id, :ts, :te, :sn, :st) ON CONFLICT (animeid) DO NOTHING;""",
+                id=mediaid, ts=d.get("number_of_seasons"), te=d.get("number_of_episodes"),
+                sn=studio, st=status)
         else:
-            data = tmdb_get(f"tv/{tmdb_id}/videos")
+            conn.run(
+                """INSERT INTO series (seriesid, totalseasons, status) VALUES (:id, :ts, :st)
+                   ON CONFLICT (seriesid) DO NOTHING;""",
+                id=mediaid, ts=d.get("number_of_seasons"), st=status)
 
-        trailernum = 1
-        for video in data.get("results", []):
-            # only want YouTube trailers
-            if video.get("site") == "YouTube" and video.get("type") == "Trailer":
-                youtube_url = f"https://www.youtube.com/embed/{video['key']}"
-                # check not already saved
-                existing = conn.run(
-                    "SELECT 1 FROM trailer WHERE mediaid=:m AND trailernum=:n;",
-                    m=mediaid, n=trailernum)
-                if not existing:
-                    conn.run(
-                        "INSERT INTO trailer (mediaid, trailernum, title, url) VALUES (:m, :n, :t, :u);",
-                        m=mediaid, n=trailernum,
-                        t=video.get("name", "Official Trailer"),
-                        u=youtube_url)
-                trailernum += 1
-                if trailernum > 3:  # save max 3 trailers per title
-                    break
-    except Exception as e:
-        print(f"[trailer fetch error] {e}")
+        _set_genres(conn, mediaid, d.get("genres", []))
+        # for TV the "director" we show is whoever created the show
+        creators = d.get("created_by") or [c for c in d.get("credits", {}).get("crew", [])
+                                           if c.get("job") == "Director"][:2]
+        _set_credits(conn, mediaid, d.get("credits", {}).get("cast", []), creators)
+        _set_trailers(conn, mediaid, d.get("videos", {}).get("results", []))
+        print(f"[import] {kind}: {fields['title']}")
+        return mediaid
+
+    return _import(conn, "tv", tmdb_id, fetch, store)
+
+
+# ── Games (RAWG) ─────────────────────────────────────────────
+
+ESRB_CODES = {"Everyone": "E", "Everyone 10+": "E10+", "Teen": "T", "Mature": "M",
+              "Adults Only": "AO", "Rating Pending": "RP"}
+
+
+def game_fields(d):
+    return {
+        "title":       d.get("name") or "Unknown",
+        "releasedate": d.get("released") or None,
+        "posterurl":   d.get("background_image"),
+        "backdropurl": d.get("background_image_additional") or d.get("background_image"),
+        "overview":    d.get("description_raw") or None,
+        "mediatype":   "game",
+        "rawg_id":     d["id"],
+        # RAWG rates out of 5, everything else on the site is out of 10
+        "tmdb_rating": round(d["rating"] * 2, 2) if d.get("ratings_count") else None,
+        "vote_count":  d.get("ratings_count") or 0,
+        "popularity":  d.get("added"),
+    }
+
+
+def import_game(conn, rawg_id):
+    def fetch():
+        return rawg_get(f"games/{rawg_id}")
+
+    def store(d):
+        fields = game_fields(d)
+        mediaid, _ = _find_legacy(conn, fields["title"], (fields["releasedate"] or "")[:4], ["game"])
+        mediaid = save_media(conn, mediaid, fields)
+        esrb = (d.get("esrb_rating") or {}).get("name")
+        conn.run(
+            """INSERT INTO game (gameid, developer, publisher, platform, esrb_rating)
+               VALUES (:id, :dev, :pub, :pl, :esrb) ON CONFLICT (gameid) DO NOTHING;""",
+            id=mediaid,
+            dev=(d.get("developers") or [{}])[0].get("name"),
+            pub=(d.get("publishers") or [{}])[0].get("name"),
+            pl=", ".join(p["platform"]["name"] for p in (d.get("platforms") or [])[:5]),
+            esrb=ESRB_CODES.get(esrb))
+        _set_genres(conn, mediaid, d.get("genres", []))
+        print(f"[import] game: {fields['title']}")
+        return mediaid
+
+    mediaid = _import(conn, "game", rawg_id, fetch, store)
+    _save_game_trailers(conn, mediaid, rawg_id)
+    return mediaid
+
+
+def _save_game_trailers(conn, mediaid, rawg_id):
+    if conn.run("SELECT 1 FROM trailer WHERE mediaid=:m;", m=mediaid):
+        return
+    try:
+        videos = rawg_get(f"games/{rawg_id}/movies").get("results", [])
+    except requests.RequestException as e:
+        print(f"[import] no trailers for game {rawg_id}: {e}")
+        return
+    for num, video in enumerate(videos[:3], start=1):
+        url = (video.get("data") or {}).get("max") or (video.get("data") or {}).get("480")
+        if url:
+            conn.run("""INSERT INTO trailer (mediaid, trailernum, title, url) VALUES (:m, :n, :t, :u)
+                        ON CONFLICT DO NOTHING;""",
+                     m=mediaid, n=num, t=video.get("name", "Game Trailer"), u=url)
+
+
+# ── People ───────────────────────────────────────────────────
+
+def import_person(conn, tmdb_id):
+    rows = conn.run("SELECT personid FROM person WHERE tmdb_id=:id;", id=tmdb_id)
+    if rows:
+        return rows[0][0]
+
+    d = tmdb_get(f"person/{tmdb_id}")
+
+    def store():
+        personid = ensure_person(conn, d)
+        conn.run("""UPDATE person SET bio = COALESCE(:b, bio), birthdate = COALESCE(:bd, birthdate),
+                        photourl = COALESCE(:p, photourl)
+                    WHERE personid = :id;""",
+                 b=d.get("biography") or None, bd=d.get("birthday") or None,
+                 p=tmdb_image(d.get("profile_path")), id=personid)
+        if d.get("known_for_department") == "Directing":
+            conn.run("INSERT INTO director (directorid) VALUES (:id) ON CONFLICT DO NOTHING;", id=personid)
+        else:
+            conn.run("INSERT INTO actor (actorid) VALUES (:id) ON CONFLICT DO NOTHING;", id=personid)
+        print(f"[import] person: {d.get('name')}")
+        return personid
+
+    return _atomic(conn, store)
+
+
+# ── Topping up older rows ────────────────────────────────────
+
+def fill_missing_details(conn, mediaid, kind, d):
+    """Add genres / cast / trailers to a row that has none yet.
+    `d` is a TMDB movie or tv response fetched with credits,videos appended."""
+    has = lambda table: conn.run(f"SELECT 1 FROM {table} WHERE mediaid=:m LIMIT 1;", m=mediaid)
+    if not has("media_genre"):
+        _set_genres(conn, mediaid, d.get("genres", []))
+    if not has("cast_member"):
+        crew = d.get("credits", {}).get("crew", [])
+        directors = (d.get("created_by") if kind == "tv" else None) or \
+            [c for c in crew if c.get("job") == "Director"][:2]
+        _set_credits(conn, mediaid, d.get("credits", {}).get("cast", []), directors)
+    if not has("trailer"):
+        _set_trailers(conn, mediaid, d.get("videos", {}).get("results", []))

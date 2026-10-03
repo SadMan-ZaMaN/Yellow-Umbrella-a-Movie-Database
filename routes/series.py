@@ -1,7 +1,6 @@
 from fastapi import APIRouter
 
 from database import get_db
-from services.importer import fetch_and_save_series, tmdb_get
 
 router = APIRouter(prefix="/series", tags=["Series"])
 
@@ -30,7 +29,7 @@ def get_all_series():
 def search_series(q: str):
     conn = get_db()
     try:
-        # 1 — search DB first
+        # local titles only - /search also asks TMDB and RAWG
         rows = conn.run(
             """SELECT m.mediaid, m.title, m.releasedate, m.avgrating, m.posterurl
                FROM media m 
@@ -38,36 +37,10 @@ def search_series(q: str):
                LEFT JOIN anime a ON m.mediaid = a.animeid
                WHERE m.title ILIKE :q AND a.animeid IS NULL;""", q=f"%{q}%")
 
-        if rows:
-            return {"source": "database", "results": [
-                {"id": r[0], "title": r[1], "releasedate": str(r[2]),
-                 "avgrating": float(r[3]) if r[3] else None, "posterurl": r[4]}
-                for r in rows]}
-
-        # 2 — not in DB, search TMDB
-        tmdb = tmdb_get("search/tv", {"query": q})
-        tmdb_results = tmdb.get("results", [])
-
-        if not tmdb_results:
-            return {"source": "not_found", "results": []}
-
-        # 3 — save top 3 and return
-        saved = []
-        for item in tmdb_results[:3]:
-            try:
-                mediaid = fetch_and_save_series(conn, item["id"], mediatype="series")
-                saved.append({
-                    "id": mediaid,
-                    "title": item.get("name"),
-                    "releasedate": item.get("first_air_date"),
-                    "avgrating": None,
-                    "posterurl": f"https://image.tmdb.org/t/p/w500{item['poster_path']}"
-                                 if item.get("poster_path") else None
-                })
-            except Exception as e:
-                print(f"[auto-import error] {e}")
-
-        return {"source": "tmdb_imported", "results": saved}
+        return {"source": "database", "results": [
+            {"id": r[0], "title": r[1], "releasedate": str(r[2]),
+             "avgrating": float(r[3]) if r[3] else None, "posterurl": r[4]}
+            for r in rows]}
 
     finally:
         conn.close()
@@ -78,7 +51,7 @@ def get_series_detail(series_id: int):
     try:
         rows = conn.run(
             """SELECT m.mediaid, m.title, m.releasedate, m.avgrating,
-                      m.posterurl, s.totalseasons, s.status
+                      m.posterurl, s.totalseasons, s.status, m.overview, m.backdropurl
                FROM media m JOIN series s ON m.mediaid=s.seriesid
                WHERE m.mediaid=:id;""", id=series_id)
         if not rows:
@@ -86,7 +59,8 @@ def get_series_detail(series_id: int):
         r = rows[0]
         show = {"id": r[0], "title": r[1], "releasedate": str(r[2]),
                 "avgrating": float(r[3]) if r[3] else None,
-                "posterurl": r[4], "totalseasons": r[5], "status": r[6]}
+                "posterurl": r[4], "totalseasons": r[5], "status": r[6],
+                "overview": r[7], "backdropurl": r[8]}
 
         seasons = conn.run(
             "SELECT seasonnum, title, releasedate FROM season WHERE seriesid=:id ORDER BY seasonnum;",

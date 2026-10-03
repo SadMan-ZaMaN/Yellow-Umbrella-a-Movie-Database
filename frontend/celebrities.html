@@ -1,122 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Yellow Umbrella - Top Celebrities</title>
-    <link href="/statics/style.css" rel="stylesheet"/>
-    
-    
-
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-  tailwind.config = {
-    theme: {
-      extend: {
-        colors: {
-          brand: {
-            dark: '#0B0C10',
-            second: '#1f2833',
-            gold: '#fbbf24',
-            goldhover: '#f59e0b',
-            red: '#d97706',
-            gray: '#c5c6c7'
-          }
-        },
-        fontFamily: {
-          inter: ['Inter', 'sans-serif'],
-          outfit: ['Outfit', 'sans-serif'],
-        }
-      }
-    }
-  }
-</script>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Celebrities - YellowUmbrella</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Outfit:wght@500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="/statics/site.css?v=5" rel="stylesheet"/>
 </head>
 <body class="bg-brand-dark text-white min-h-screen flex flex-col font-sans">
+<nav id="site-nav"></nav>
 
-<!-- Navigation -->
-<nav class="sticky top-0 z-[1000] bg-brand-dark/80 backdrop-blur-xl border-b border-white/10">
-<div class="flex justify-between items-center h-[70px] w-[90%] max-w-[1400px] mx-auto">
-<a class="font-outfit text-3xl font-extrabold text-brand-gold tracking-wide drop-shadow-[0_0_15px_rgba(251,191,36,0.8)] hover:drop-shadow-[0_0_25px_rgba(251,191,36,1)] transition-all" href="/">Yellow<span style="color: white; text-shadow: 0 0 10px rgba(255,255,255,0.8);">Umbrella</span></a>
-<div class="flex gap-7 items-center">
-<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/">Home</a>
-<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/top_rated.html">Top Rated</a>
-<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group active text-brand-gold" href="/celebrities.html">Top Celebrities</a>
-<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/events.html">Awards</a>
-</div>
-<div class="flex gap-4 items-center">
-<a class="px-4 py-2 rounded-lg font-semibold text-[0.9rem] cursor-pointer transition bg-transparent border border-white/10 border border-brand-gold text-brand-gold hover:bg-brand-gold/10 hover:shadow-[0_0_15px_rgba(251,191,36,0.3)] guest-only" href="/login.html">Sign In</a>
-<a class="px-4 py-2 rounded-lg font-semibold text-[0.9rem] cursor-pointer transition bg-brand-gold border border-brand-gold text-brand-dark hover:bg-black/40 border border-white/10 hover:border-white hover:text-brand-dark guest-only" href="/login.html">Sign Up</a>
-<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group auth-only auth-hidden display-username flex items-center h-full" href="/profile.html" style="font-weight: 700;"></a>
-<button class="px-4 py-2 rounded-lg font-semibold text-[0.9rem] cursor-pointer transition bg-transparent border border-white/10 border border-brand-gold text-brand-gold hover:bg-brand-gold/10 hover:shadow-[0_0_15px_rgba(251,191,36,0.3)] auth-only auth-hidden" id="logout-btn">Logout</button>
-</div>
-</div>
-</nav>
+<header class="border-b border-white/10 bg-black/40 py-12 text-center px-4">
+    <h1 class="text-4xl md:text-5xl font-bold font-outfit">Popular <span class="text-brand-gold">Celebrities</span></h1>
+    <p class="text-brand-gray mt-3 max-w-2xl mx-auto">Who people are looking up this week.</p>
+</header>
 
-<!-- Main Header -->
-<div class="border-b border-white/10 bg-black/40 pt-[60px] pb-[40px] text-center">
-    <h1 class="text-4xl md:text-5xl font-bold font-outfit mb-4">Most Popular <span class="text-brand-gold">Celebrities</span></h1>
-    <p class="text-brand-gray text-lg max-w-2xl mx-auto">Always remain updated with the pop culture</p>
-</div>
-
-<!-- Main Grid -->
-<main class="w-[90%] max-w-[1400px] mx-auto flex-1 py-10">
-    <div id="loading" class="text-brand-gray text-center text-xl mt-10">Loading Popular Celebrities...</div>
-    <div id="error" class="hidden text-brand-red text-center text-xl mt-10"></div>
-    
-    <!-- Row by Row Grid to match screenshot strictly -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-10 hidden" id="celeb-grid">
-        <!-- JS Injects Here -->
-    </div>
+<main class="w-[92%] max-w-[1400px] mx-auto flex-1 py-10">
+    <div class="poster-grid" id="celeb-grid"></div>
+    <p id="status" class="hidden text-center text-red-400 py-10"></p>
 </main>
 
-<script src="/statics/app.js?v=4"></script>
+<script src="/statics/app.js?v=5"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', async () => {
+    (async () => {
         const grid = document.getElementById('celeb-grid');
-        const loading = document.getElementById('loading');
-        const errorBox = document.getElementById('error');
-
+        const status = document.getElementById('status');
+        grid.innerHTML = skeletonCards(18);
         try {
-            const res = await fetch('/people/popular');
-            const data = await res.json();
-
-            if (data.error) throw new Error(data.error);
-
-            loading.style.display = 'none';
-            grid.classList.remove('hidden');
-
-            data.forEach(person => {
-                const card = document.createElement('div');
-                // Removed the internal gradient overlay to match TMDB's direct block styles, adjusting to golden/black palette
-                card.className = "bg-black/40 border border-white/10 flex flex-col rounded-xl overflow-hidden cursor-pointer shadow-md hover:shadow-xl hover:scale-[1.02] transition duration-300";
-                card.onclick = () => window.location.href = `/person.html?id=${person.id}`;
-
-                const photoClass = "w-full object-cover aspect-[2/3]";
-                const fallbackImg = "https://placehold.co/300x450/111/fff?text=No+Photo";
-                let imgUrl = (person.photo && person.photo !== 'None' && person.photo !== null) ? person.photo : fallbackImg;
-                if (imgUrl && imgUrl.startsWith('/')) imgUrl = 'https://image.tmdb.org/t/p/w500' + imgUrl;
-
-                // We adhere to the exact TMDB styling shown in screenshot: Image on top, white block text below
-                // We will invert it to dark mode since user asked to "follow the black and golden color palette"
-                card.innerHTML = `
-                    <div class="overflow-hidden bg-[#1f2833]">
-                        <img src="${imgUrl}" alt="${person.name}" class="${photoClass}">
+            const people = await (await fetch('/people/popular')).json();
+            if (people.error) throw new Error(people.error);
+            grid.innerHTML = people.map(p => `
+                <a href="${p.url}" class="group block">
+                    <div class="poster-card">
+                        <img src="${imageUrl(p.photo) || POSTER_FALLBACK}" alt="" loading="lazy" decoding="async">
                     </div>
-                    <div class="px-4 py-3 flex-1 flex flex-col bg-[#111] border-x border-b border-white/10 rounded-b-xl border-t border-brand-gold/20">
-                        <h3 class="font-bold text-[1.1rem] text-white transition duration-200 mb-0.5">${person.name}</h3>
-                        <p class="text-[0.85rem] text-brand-gray/80 line-clamp-2">${person.known_for || 'Unknown'}</p>
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
-
+                    <h3 class="mt-2 font-semibold group-hover:text-brand-gold transition-colors">${escapeHtml(p.name)}</h3>
+                    <p class="text-sm text-brand-gray line-clamp-2">${escapeHtml(p.known_for || '')}</p>
+                </a>`).join('');
         } catch (err) {
-            loading.style.display = 'none';
-            errorBox.classList.remove('hidden');
-            errorBox.textContent = "Failed to load celebrities: " + err.message;
+            grid.innerHTML = '';
+            status.textContent = `Couldn't load celebrities: ${err.message}`;
+            status.classList.remove('hidden');
         }
-    });
+    })();
 </script>
 </body>
 </html>

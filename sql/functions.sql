@@ -6,27 +6,43 @@
 
 
 -- ============================================================
--- TRIGGER: keep media.avgrating in sync with its reviews
--- Fires on INSERT / UPDATE / DELETE, so the app never has to
--- recalculate averages itself.
+-- RATINGS
+-- media.avgrating is the score the site shows. It blends the votes
+-- behind TMDB's (or RAWG's) score with our own users' reviews, as if
+-- they were all one pool of votes:
+--
+--     (tmdb_rating * vote_count + SUM(our ratings))
+--     ---------------------------------------------
+--           vote_count + COUNT(our ratings)
+--
+-- so three 10/10 reviews don't outweigh 30,000 votes on TMDB, but on
+-- a title TMDB knows nothing about our reviews are all that counts.
 -- ============================================================
 
+CREATE OR REPLACE FUNCTION refresh_avg_rating(p_mediaid INT)
+RETURNS VOID AS $$
+BEGIN
+    UPDATE media m
+    SET avgrating = (
+        SELECT ROUND(
+                 (COALESCE(m.tmdb_rating * m.vote_count, 0) + COALESCE(SUM(r.rating), 0))
+                 / NULLIF(CASE WHEN m.tmdb_rating IS NULL THEN 0 ELSE COALESCE(m.vote_count, 0) END
+                          + COUNT(r.rating), 0),
+               2)
+        FROM review r
+        WHERE r.mediaid = m.mediaid
+    )
+    WHERE m.mediaid = p_mediaid;
+END;
+$$ LANGUAGE plpgsql;
+
+-- TRIGGER: re-blend whenever a review is added, changed or removed,
+-- so the app never has to recalculate ratings itself
 CREATE OR REPLACE FUNCTION update_avg_rating()
 RETURNS TRIGGER AS $$
-DECLARE
-    v_media_id INT;
 BEGIN
     -- NEW exists for INSERT/UPDATE, OLD exists for DELETE
-    v_media_id := COALESCE(NEW.mediaid, OLD.mediaid);
-
-    UPDATE media
-    SET avgrating = (
-        SELECT ROUND(AVG(rating)::numeric, 2)
-        FROM review
-        WHERE mediaid = v_media_id
-    )
-    WHERE mediaid = v_media_id;
-
+    PERFORM refresh_avg_rating(COALESCE(NEW.mediaid, OLD.mediaid));
     RETURN COALESCE(NEW, OLD);
 END;
 $$ LANGUAGE plpgsql;
@@ -42,15 +58,40 @@ FOR EACH ROW EXECUTE FUNCTION update_avg_rating();
 -- FUNCTIONS (used by routes/stats.py)
 -- ============================================================
 
--- Top rated media of any type
-CREATE OR REPLACE FUNCTION get_top_rated_media(limit_count INT)
-RETURNS TABLE(mediaid INT, title VARCHAR, avgrating DECIMAL, mediatype VARCHAR, posterurl VARCHAR) AS $$
+-- Top rated media, optionally for one type.
+-- Sorting by plain average puts a film with a single 10/10 vote on top,
+-- so this uses IMDb's weighted rating instead:
+--     score = (v * R + m * C) / (v + m)
+-- R = the title's (blended) rating, v = all the votes behind it,
+-- C = the average rating across all candidates, m = min_votes.
+-- Titles with few votes get pulled towards the average.
+DROP FUNCTION IF EXISTS get_top_rated_media(INT);
+
+CREATE OR REPLACE FUNCTION get_top_rated_media(
+    limit_count INT,
+    p_mediatype VARCHAR DEFAULT NULL,
+    min_votes   INT DEFAULT 500
+)
+RETURNS TABLE(mediaid INT, title VARCHAR, avgrating DECIMAL, mediatype VARCHAR,
+              posterurl VARCHAR, score DECIMAL) AS $$
 BEGIN
     RETURN QUERY
-    SELECT m.mediaid, m.title, m.avgrating, m.mediatype, m.posterurl
-    FROM media m
-    WHERE m.avgrating IS NOT NULL
-    ORDER BY m.avgrating DESC
+    WITH rated AS (
+        SELECT m.mediaid, m.title, m.avgrating, m.mediatype, m.posterurl,
+               CASE WHEN m.tmdb_rating IS NULL THEN 0 ELSE COALESCE(m.vote_count, 0) END
+                 + (SELECT COUNT(*) FROM review r WHERE r.mediaid = m.mediaid) AS votes
+        FROM media m
+        WHERE m.avgrating IS NOT NULL
+          AND (p_mediatype IS NULL OR m.mediatype = p_mediatype)
+    ),
+    overall AS (
+        SELECT AVG(rated.avgrating) AS c FROM rated
+    )
+    SELECT rated.mediaid, rated.title, rated.avgrating, rated.mediatype, rated.posterurl,
+           ROUND((rated.votes * rated.avgrating + min_votes * overall.c)
+                 / (rated.votes + min_votes), 3)
+    FROM rated, overall
+    ORDER BY 6 DESC
     LIMIT limit_count;
 END;
 $$ LANGUAGE plpgsql;
