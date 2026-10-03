@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Yellow Umbrella - Person Profile</title>
+<link href="/statics/style.css" rel="stylesheet"/>
+
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: {
+            dark: '#0B0C10',
+            second: '#1f2833',
+            gold: '#fbbf24',
+            goldhover: '#f59e0b',
+            red: '#d97706',
+            gray: '#c5c6c7'
+          }
+        },
+        fontFamily: {
+          inter: ['Inter', 'sans-serif'],
+          outfit: ['Outfit', 'sans-serif'],
+        }
+      }
+    }
+  }
+</script>
+</head>
+<body class="bg-brand-dark text-white min-h-screen flex flex-col font-sans">
+<nav class="sticky top-0 z-[1000] bg-brand-dark/80 backdrop-blur-xl border-b border-white/10">
+<div class="flex justify-between items-center h-[70px] w-[90%] max-w-[1400px] mx-auto">
+<a class="font-outfit text-3xl font-extrabold text-brand-gold tracking-wide drop-shadow-[0_0_15px_rgba(251,191,36,0.8)] hover:drop-shadow-[0_0_25px_rgba(251,191,36,1)] transition-all" href="/">Yellow<span style="color: white; text-shadow: 0 0 10px rgba(255,255,255,0.8);">Umbrella</span></a>
+<div class="flex gap-7 items-center">
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/">Home</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/top_rated.html">Top Rated</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/celebrities.html">Top Celebrities</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/events.html">Awards</a>
+</div>
+<div class="flex gap-4 items-center">
+<a class="px-4 py-2 rounded-lg font-semibold text-[0.9rem] cursor-pointer transition bg-transparent border border-white/10 border border-brand-gold text-brand-gold hover:bg-brand-gold/10 hover:shadow-[0_0_15px_rgba(251,191,36,0.3)] guest-only" href="/login.html">Sign In</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group auth-only auth-hidden display-username flex items-center h-full" href="/profile.html" style="font-weight: 700;"></a>
+<button class="px-4 py-2 rounded-lg font-semibold text-[0.9rem] cursor-pointer transition bg-transparent border border-white/10 border border-brand-gold text-brand-gold hover:bg-brand-gold/10 hover:shadow-[0_0_15px_rgba(251,191,36,0.3)] auth-only auth-hidden" id="logout-btn">Logout</button>
+</div>
+</div>
+</nav>
+<main class="w-[90%] max-w-[1400px] mx-auto flex-1 py-10">
+<div class="text-center mt-[30px] text-brand-gray" id="loading-spinner">Loading Profile...</div>
+<div class="text-red-500 text-center mt-[30px] hidden text-[1.2rem]" id="error-box"></div>
+<div id="person-content" class="hidden">
+<div class="flex flex-col md:flex-row gap-10 items-start mb-10">
+<img id="p-photo" src="" class="w-[300px] rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] border-[2px] border-white/5"/>
+<div class="flex-1 w-full">
+<div id="p-role" class="uppercase text-brand-gold font-bold text-[0.85rem] tracking-widest mb-2.5"></div>
+<h1 id="p-name" class="text-[4rem] md:text-6xl mb-1 leading-none text-white font-bold"></h1>
+<div class="text-brand-gray mb-[30px] text-[1.1rem]">
+                        Born: <span id="p-birth" class="text-white font-semibold"></span>
+</div>
+<div class="bg-black/40 backdrop-blur-xl border border-white/10 rounded-[20px] p-[30px] shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] leading-[1.8]">
+<h3 class="text-brand-red mb-2.5 font-bold text-xl">Biography</h3>
+<p id="p-bio" class="text-brand-gray"></p>
+</div>
+</div>
+</div>
+<hr class="border-t border-white/10 my-10"/>
+<div class="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-10">
+<!-- Credits List -->
+<div>
+<!-- Acting -->
+<div id="acting-block" class="hidden mb-10">
+<h2 class="mb-5 text-2xl font-bold">Acting Credits</h2>
+<div id="p-credits" class="flex flex-col gap-2.5"></div>
+</div>
+<!-- Directing -->
+<div id="directing-block" class="hidden">
+<h2 class="mb-5 text-2xl font-bold">Directing Credits</h2>
+<div id="p-directed" class="flex flex-col gap-2.5"></div>
+</div>
+</div>
+<!-- Community Comments -->
+<div>
+<h2 class="text-2xl font-bold">Community Discussion</h2>
+<div class="bg-black/30 backdrop-blur-xl border border-white/10 rounded-[20px] p-[30px] shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] mt-5 auth-only auth-hidden">
+<h4 class="text-brand-gold mb-2.5 font-bold">Leave a Comment</h4>
+<textarea class="w-full bg-black/20 border border-white/10 text-white py-3 px-4 rounded-lg font-sans text-base transition focus:outline-none focus:border-brand-gold focus:bg-black/40 focus:ring-2 focus:ring-brand-gold/20 mb-[15px]" id="comment-text" placeholder="Discuss their body of work..." rows="3"></textarea>
+<button class="bg-brand-red text-white py-3 px-6 rounded-lg font-semibold text-base hover:bg-[currentColor] hover:shadow-[0_0_15px_rgba(229,9,20,0.4)] hover:-translate-y-0.5 transition inline-flex items-center justify-center gap-2 w-full" id="post-comment-btn">Post Comment</button>
+</div>
+<div class="mt-[30px] flex flex-col gap-[15px]" id="comments-feed"></div>
+</div>
+</div>
+</div>
+</main>
+<script src="/statics/app.js?v=4"></script>
+<script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const params = new URLSearchParams(window.location.search);
+            // Default 1004 (Robert Downey Jr example, or fallback)
+            const personId = params.get('id') ? parseInt(params.get('id')) : 1004; 
+
+            try {
+                // Fetch Person specifics
+                const res = await fetch(`/people/${personId}`);
+                if (!res.ok) throw new Error("Backend route not found or ID invalid.");
+                const person = await res.json();
+                
+                if (person.error) throw new Error(person.error);
+
+                document.getElementById('loading-spinner').style.display = 'none';
+                document.getElementById('person-content').style.display = 'block';
+
+                document.title = `${person.name} - Yellow Umbrella`;
+                
+                document.getElementById('p-name').textContent = person.name;
+                document.getElementById('p-photo').src = (person.photo && person.photo.startsWith('/')) ? ('https://image.tmdb.org/t/p/w500' + person.photo) : (person.photo || 'https://placehold.co/300x450');
+                document.getElementById('p-birth').textContent = person.birthdate ? person.birthdate.split(' ')[0] : 'Unknown';
+                document.getElementById('p-bio').textContent = person.bio || 'Biography not available for this individual.';
+                
+                const roleText = person.role || 'Industry Professional';
+                document.getElementById('p-role').textContent = roleText;
+
+                // Acting Roster
+                if (person.filmography && person.filmography.length > 0) {
+                    document.getElementById('acting-block').style.display = 'block';
+                    const credDiv = document.getElementById('p-credits');
+                    person.filmography.forEach(film => {
+                        const row = document.createElement('div');
+                        row.className = 'bg-black/40 backdrop-blur-xl border border-white/10 rounded-lg p-4 flex justify-between cursor-pointer transition hover:bg-black/40 border border-white/10/10';
+                        // filmography only links to movie pages for now
+                        row.onclick = () => window.location.href = `/movie.html?id=${film.id}`;
+                        row.innerHTML = `
+                            <strong class="text-white">${film.title}</strong>
+                            <span class="text-brand-gray">as ${film.role}</span>
+                        `;
+                        credDiv.appendChild(row);
+                    });
+                }
+
+                // Directing Roster
+                if (person.directed && person.directed.length > 0) {
+                    document.getElementById('directing-block').style.display = 'block';
+                    const dirDiv = document.getElementById('p-directed');
+                    person.directed.forEach(film => {
+                        const row = document.createElement('div');
+                        row.className = 'bg-black/40 backdrop-blur-xl border border-white/10 rounded-lg p-4 flex justify-between cursor-pointer transition hover:bg-black/40 border border-white/10/10';
+                        row.onclick = () => window.location.href = `/movie.html?id=${film.id}`;
+                        row.innerHTML = `
+                            <strong class="text-white">${film.title}</strong>
+                            <span class="text-brand-red font-semibold">Director</span>
+                        `;
+                        dirDiv.appendChild(row);
+                    });
+                }
+
+                // Load Comments
+                const loadComments = async () => {
+                    const commentFeed = document.getElementById('comments-feed');
+                    commentFeed.innerHTML = 'Loading discussion...';
+                    try {
+                        const res = await fetch(`/comments/person/${personId}`);
+                        const comments = await res.json();
+                        
+                        if (comments.error || comments.length === 0) {
+                            commentFeed.innerHTML = '<div class="text-brand-gray">No comments yet. Start the discussion!</div>';
+                            return;
+                        }
+                        
+                        commentFeed.innerHTML = comments.map(c => `
+                            <div class="bg-black/40 backdrop-blur-xl border border-white/10 rounded-[20px] p-[15px] shadow-[0_8px_32px_0_rgba(0,0,0,0.37)]">
+                                <div class="flex justify-between mb-2">
+                                    <strong class="text-brand-gold text-[0.9rem]">${escapeHtml(c.username)}</strong>
+                                    <span class="text-[#777] text-[0.8rem]">${c.at ? c.at.split(' ')[0] : ''}</span>
+                                </div>
+                                <p class="text-brand-gray text-[0.95rem]">${escapeHtml(c.text)}</p>
+                            </div>
+                        `).join('');
+                    } catch(err) {
+                        commentFeed.innerHTML = 'Error loading comments.';
+                    }
+                };
+                
+                await loadComments();
+
+                // Post Comment
+                const postBtn = document.getElementById('post-comment-btn');
+                postBtn.addEventListener('click', async () => {
+                    const text = document.getElementById('comment-text').value;
+                    const user = getUser();
+                    
+                    if (!user) return alert("Must be logged in.");
+                    if (!text.trim()) return alert("Comment cannot be empty.");
+                    
+                    try {
+                        await apiFetch(`/comments/person`, {
+                            method: 'POST',
+                            body: JSON.stringify({ personid: personId, userid: user.userid, commenttext: text })
+                        });
+                        document.getElementById('comment-text').value = '';
+                        await loadComments();
+                    } catch (err) {
+                        alert(err.message);
+                    }
+                });
+
+            } catch (err) {
+                document.getElementById('loading-spinner').style.display = 'none';
+                const el = document.getElementById('error-box');
+                el.style.display = 'block';
+                el.textContent = err.message || "Failed to load individual entry.";
+            }
+        });
+    </script>
+</body>
+</html>

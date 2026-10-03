@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Yellow Umbrella - My Watchlists</title>
+<link href="/statics/style.css" rel="stylesheet"/>
+
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: {
+            dark: '#0B0C10',
+            second: '#1f2833',
+            gold: '#fbbf24',
+            goldhover: '#f59e0b',
+            red: '#d97706',
+            gray: '#c5c6c7'
+          }
+        },
+        fontFamily: {
+          inter: ['Inter', 'sans-serif'],
+          outfit: ['Outfit', 'sans-serif'],
+        }
+      }
+    }
+  }
+</script>
+</head>
+<body class="bg-brand-dark text-white min-h-screen flex flex-col font-sans">
+<nav class="sticky top-0 z-[1000] bg-brand-dark/80 backdrop-blur-xl border-b border-white/10">
+<div class="flex justify-between items-center h-[70px] w-[90%] max-w-[1400px] mx-auto">
+<a class="font-outfit text-3xl font-extrabold text-brand-gold tracking-wide drop-shadow-[0_0_15px_rgba(251,191,36,0.8)] hover:drop-shadow-[0_0_25px_rgba(251,191,36,1)] transition-all" href="/">Yellow<span style="color: white; text-shadow: 0 0 10px rgba(255,255,255,0.8);">Umbrella</span></a>
+<div class="flex gap-7 items-center">
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/">Home</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/top_rated.html">Top Rated</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/celebrities.html">Top Celebrities</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/events.html">Awards</a>
+</div>
+<div class="flex gap-4 items-center">
+<a class="px-4 py-2 rounded-lg font-semibold text-[0.9rem] cursor-pointer transition bg-transparent border border-white/10 border border-brand-gold text-brand-gold hover:bg-brand-gold/10 hover:shadow-[0_0_15px_rgba(251,191,36,0.3)] guest-only" href="/login.html">Sign In</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group auth-only auth-hidden display-username flex items-center h-full" href="/profile.html" style="font-weight: 700;"></a>
+<button class="px-4 py-2 rounded-lg font-semibold text-[0.9rem] cursor-pointer transition bg-transparent border border-white/10 border border-brand-gold text-brand-gold hover:bg-brand-gold/10 hover:shadow-[0_0_15px_rgba(251,191,36,0.3)] auth-only auth-hidden" id="logout-btn">Logout</button>
+</div>
+</div>
+</nav>
+<main class="w-[90%] max-w-[1400px] mx-auto flex-1 py-10">
+<div class="text-center hidden mt-[100px]" id="auth-wall">
+<h2 class="text-brand-red text-2xl font-bold mb-2">Login Required.</h2>
+<p class="text-brand-gray mb-5">You must be logged in to view your watchlists.</p>
+<a class="bg-brand-red text-white py-3 px-6 rounded-lg font-semibold text-base hover:bg-[currentColor] hover:shadow-[0_0_15px_rgba(229,9,20,0.4)] hover:-translate-y-0.5 transition inline-flex items-center justify-center gap-2" href="/login.html">Go to Login</a>
+</div>
+<div id="lists-content" class="hidden">
+<div class="flex justify-between items-end mb-[30px]">
+<h1 class="text-3xl font-bold font-outfit relative inline-block after:absolute after:w-2/5 after:h-1 after:-bottom-2.5 after:left-0 after:bg-brand-red after:rounded-sm">My Watchlist</h1>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+<div>
+<h3 class="mb-5 text-brand-gold font-bold text-xl">Items to Watch</h3>
+<div id="watchlist-feed">
+<div class="text-center text-brand-gray">Loading Watchlist...</div>
+</div>
+</div>
+<div>
+<div class="bg-black/40 backdrop-blur-xl border border-white/10 border-t-[3px] border-t-brand-red rounded-[20px] p-[30px] shadow-[0_8px_32px_0_rgba(0,0,0,0.37)]">
+<h2 class="mb-2.5 text-2xl font-bold">Custom Lists</h2>
+<button class="bg-brand-red text-white py-3 px-6 rounded-lg font-semibold text-base hover:bg-[currentColor] hover:shadow-[0_0_15px_rgba(229,9,20,0.4)] hover:-translate-y-0.5 transition inline-flex items-center justify-center gap-2 w-full" onclick="window.location.href='/customlists.html'">View My Favorites</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<script src="/statics/app.js?v=4"></script>
+<script>requireAuth();</script>
+<script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!isLoggedIn()) {
+                document.getElementById('auth-wall').style.display = 'block';
+                return;
+            }
+
+            document.getElementById('lists-content').style.display = 'block';
+            
+            const user = getUser();
+            const feed = document.getElementById('watchlist-feed');
+
+            try {
+                // Movies, series and anime live in the watchlist table
+                const list = await apiFetch(`/watchlist/${user.userid}`);
+
+                // Games are saved to an "Interested" custom list instead
+                let interested = [];
+                try {
+                    const data = await apiFetch(`/lists/${user.userid}/Interested`);
+                    interested = Array.isArray(data) ? data : [];
+                } catch(e) {
+                    console.error("Interested fetch failed:", e);
+                }
+
+                // remember where each item came from so "remove" hits the right endpoint
+                const combined = [
+                    ...(Array.isArray(list) ? list : []).map(item => ({ ...item, source: 'watchlist' })),
+                    ...interested.map(item => ({ ...item, source: 'Interested' })),
+                ];
+                
+                feed.innerHTML = '';
+                
+                if (combined.length === 0) {
+                    feed.innerHTML = '<div class="text-[#777] italic text-center py-10">Your list is currently empty.</div>';
+                    return;
+                }
+
+                combined.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'watch-row flex bg-black/30 border border-white/5 rounded-xl overflow-hidden mb-4 transition hover:border-white/20 hover:bg-black/40 shadow-lg';
+                    
+                    const ratingStr = item.avgrating ? parseFloat(item.avgrating).toFixed(1) : 'NR';
+                    
+                    let link = "";
+                    if (item.type === 'movie') link = `/movie.html?id=${item.id}`;
+                    else if (item.type === 'series') link = `/series.html?id=${item.id}`;
+                    else if (item.type === 'anime') link = `/anime.html?id=${item.id}`;
+                    else if (item.type === 'game') link = `/game.html?id=${item.id}`;
+
+                    div.innerHTML = `
+                        <img src="${(item.posterurl && item.posterurl.startsWith('/')) ? ('https://image.tmdb.org/t/p/w500' + item.posterurl) : (item.posterurl || 'https://placehold.co/80x120')}" alt="${item.title}" class="w-[90px] h-[130px] object-cover cursor-pointer hover:opacity-80 transition" onclick="window.location.href='${link}'">
+                        <div class="p-4 flex-1 flex flex-col justify-center">
+                            <h3 class="font-bold text-lg mb-1 cursor-pointer hover:text-brand-gold transition leading-tight" onclick="window.location.href='${link}'">${item.title}</h3>
+                            <div class="text-sm text-brand-gray flex items-center gap-2">
+                                <span class="capitalize px-2 py-0.5 bg-white/5 rounded text-[10px] font-bold tracking-wider">${item.type}</span>
+                                <span class="text-brand-gold font-bold">★ ${ratingStr}</span>
+                            </div>
+                        </div>
+                        <div class="p-4 flex items-center">
+                            <button class="remove-btn group relative h-10 w-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-brand-red/20 text-brand-gray hover:text-brand-red transition" 
+                                    data-id="${item.id}" data-type="${item.type}" data-list="${item.source}" title="Remove from list">
+                                <span class="text-lg">✕</span>
+                            </button>
+                        </div>
+                    `;
+                    feed.appendChild(div);
+                });
+
+                // Bind Remove Buttons
+                document.querySelectorAll('.remove-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const mediaId = btn.getAttribute('data-id');
+                        const listType = btn.getAttribute('data-list');
+                        btn.innerHTML = '<div class="w-4 h-4 border-2 border-brand-red/30 border-t-brand-red rounded-full animate-spin"></div>';
+                        
+                        try {
+                            if (listType === 'watchlist') {
+                                await apiFetch(`/watchlist/${user.userid}/${mediaId}`, { method: 'DELETE' });
+                            } else {
+                                await apiFetch(`/lists/${user.userid}/${listType}/${mediaId}`, { method: 'DELETE' });
+                            }
+                            
+                            const parent = btn.closest('.watch-row');
+                            parent.style.transform = 'scale(0.95)';
+                            parent.style.opacity = '0';
+                            setTimeout(() => {
+                                parent.remove();
+                                if (feed.children.length === 0) {
+                                    feed.innerHTML = '<div class="text-[#777] italic text-center py-10">Your list is currently empty.</div>';
+                                }
+                            }, 300);
+                        } catch (err) {
+                            alert("Failed to remove: " + err.message);
+                            btn.innerHTML = '<span class="text-lg">✕</span>';
+                        }
+                    });
+                });
+
+            } catch (err) {
+                feed.innerHTML = `<div class="text-red-500 text-sm mt-1">Failed to load: ${err.message}</div>`;
+            }
+        });
+    </script>
+</body>
+</html>

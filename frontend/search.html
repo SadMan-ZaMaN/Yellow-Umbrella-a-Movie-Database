@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Yellow Umbrella - Search Results</title>
+<link href="/statics/style.css" rel="stylesheet"/>
+
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: {
+            dark: '#0B0C10',
+            second: '#1f2833',
+            gold: '#fbbf24',
+            goldhover: '#f59e0b',
+            red: '#d97706',
+            gray: '#c5c6c7'
+          }
+        },
+        fontFamily: {
+          inter: ['Inter', 'sans-serif'],
+          outfit: ['Outfit', 'sans-serif'],
+        }
+      }
+    }
+  }
+</script>
+</head>
+<body class="bg-brand-dark text-white min-h-screen flex flex-col font-sans">
+<nav class="sticky top-0 z-[1000] bg-brand-dark/80 backdrop-blur-xl border-b border-white/10">
+<div class="flex justify-between items-center h-[70px] w-[90%] max-w-[1400px] mx-auto">
+<a class="font-outfit text-3xl font-extrabold text-brand-gold tracking-wide drop-shadow-[0_0_15px_rgba(251,191,36,0.8)] hover:drop-shadow-[0_0_25px_rgba(251,191,36,1)] transition-all" href="/">Yellow<span style="color: white; text-shadow: 0 0 10px rgba(255,255,255,0.8);">Umbrella</span></a>
+<div class="flex gap-7 items-center">
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/">Home</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/top_rated.html">Top Rated</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/celebrities.html">Top Celebrities</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/events.html">Awards</a>
+</div>
+<div class="flex gap-4 items-center">
+<a class="px-4 py-2 rounded-lg font-semibold text-[0.9rem] cursor-pointer transition bg-transparent border border-white/10 border border-brand-gold text-brand-gold hover:bg-brand-gold/10 hover:shadow-[0_0_15px_rgba(251,191,36,0.3)] guest-only" href="/login.html">Sign In</a>
+<a class="px-4 py-2 rounded-lg font-semibold text-[0.9rem] cursor-pointer transition bg-brand-gold border border-brand-gold text-brand-dark hover:bg-black/40 border border-white/10 hover:border-white hover:text-brand-dark guest-only" href="/login.html">Sign Up</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group auth-only auth-hidden display-username flex items-center h-full" href="/profile.html" style="font-weight: 700;"></a>
+<button class="px-4 py-2 rounded-lg font-semibold text-[0.9rem] cursor-pointer transition bg-transparent border border-white/10 border border-brand-gold text-brand-gold hover:bg-brand-gold/10 hover:shadow-[0_0_15px_rgba(251,191,36,0.3)] auth-only auth-hidden" id="logout-btn">Logout</button>
+</div>
+</div>
+</nav>
+<!-- Global Search Replacer for Search Page -->
+<header class="w-[90%] max-w-[1400px] mx-auto flex-1 text-center pt-[60px] pb-10">
+<h1 class="mb-5 text-4xl font-bold">Search Results for <span id="search-query-display" class="text-brand-gold">...</span></h1>
+<div class="relative inline-block max-w-[600px] w-full">
+<div class="bg-black/40 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] flex items-center w-full p-2.5 rounded-[50px]">
+<input autocomplete="off" class="w-full text-white py-3 px-4 font-sans text-base transition focus:outline-none placeholder-brand-gray/50 border-none bg-transparent border border-white/10 shadow-none focus:ring-0" id="global-search" placeholder="Search again..." type="text"/>
+<button class="bg-brand-red text-white py-3 px-8 rounded-[50px] font-semibold text-base hover:bg-[currentColor] hover:shadow-[0_0_15px_rgba(229,9,20,0.4)] hover:-translate-y-0.5 transition inline-flex items-center justify-center gap-2 ml-2.5" id="search-btn">Search</button>
+</div>
+<!-- Dropdown -->
+<div class="bg-black/40 backdrop-blur-xl border border-white/10 rounded-[20px] p-2.5 shadow-[0_10px_40px_rgba(0,0,0,0.8)] z-[1000] absolute top-full left-0 right-0 mt-2.5 text-left max-h-[400px] overflow-y-auto hidden" id="autocomplete-dropdown">
+</div>
+</div>
+</header>
+<main class="w-[90%] max-w-[1400px] mx-auto flex-1 py-10">
+<div class="text-center mt-[30px] text-brand-gray" id="loading-spinner">Querying the cinematic universe (Database + TMDB)...</div>
+<div id="results-content" class="hidden mt-10">
+<div class="flex justify-between items-end mb-[30px]">
+<h2 class="text-3xl font-bold font-outfit relative inline-block after:absolute after:w-2/5 after:h-1 after:-bottom-2.5 after:left-0 after:bg-brand-red after:rounded-sm">Matches Found</h2>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-6" id="search-results-grid">
+<!-- Posters JS Inj -->
+</div>
+<div class="text-center hidden text-brand-gray h-[200px]" id="no-results-msg">
+                No matching movies or series found across our local database or TMDB. Let's try searching something else!
+            </div>
+</div>
+</main>
+<script src="/statics/app.js?v=4"></script>
+<script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const params = new URLSearchParams(window.location.search);
+            const query = params.get('q') || '';
+            const searchInput = document.getElementById('global-search');
+            
+            document.getElementById('search-query-display').textContent = `"${query}"`;
+            searchInput.value = query;
+
+            const handleSearch = () => {
+                const q = searchInput.value.trim();
+                if (q) window.location.href = `/search.html?q=${encodeURIComponent(q)}`;
+            };
+            document.getElementById('search-btn').addEventListener('click', handleSearch);
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleSearch();
+            });
+
+            // Autocomplete Logic
+            const dropdown = document.getElementById('autocomplete-dropdown');
+            let debounceTimer;
+
+            searchInput.addEventListener('input', (e) => {
+                const q = e.target.value.trim();
+                if (!q || q.length < 2) {
+                    dropdown.style.display = 'none';
+                    return;
+                }
+                
+                clearTimeout(debounceTimer);
+                dropdown.style.display = 'block';
+                dropdown.innerHTML = '<div class="text-brand-gray px-2.5 py-1.5">Searching...</div>';
+
+                debounceTimer = setTimeout(async () => {
+                    try {
+                        const [mRes, sRes] = await Promise.all([
+                            fetch(`/movies/search?q=${encodeURIComponent(q)}`).then(r=>r.json()).catch(()=>({results:[]})),
+                            fetch(`/series/search?q=${encodeURIComponent(q)}`).then(r=>r.json()).catch(()=>({results:[]}))
+                        ]);
+                        
+                        let combined = [];
+                        if(mRes.results) combined.push(...mRes.results.map(x=>({...x, _type:'movie'})));
+                        if(sRes.results) combined.push(...sRes.results.map(x=>({...x, _type:'series'})));
+                        
+                        // Sort by rating (if exist), take top 5
+                        combined.sort((a,b) => (b.avgrating || 0) - (a.avgrating || 0));
+                        combined = combined.slice(0, 5); 
+
+                        if (combined.length === 0) {
+                            dropdown.innerHTML = '<div class="text-[#777] px-2.5 py-1.5">No matches found...</div>';
+                            return;
+                        }
+
+                        dropdown.innerHTML = combined.map(item => `
+                            <div class="flex items-center gap-[15px] p-2.5 rounded-xl cursor-pointer transition-colors duration-200 hover:bg-black/40 border border-white/10/5" 
+                                 onclick="window.location.href='/${item._type}.html?id=${item.id}'">
+                                <img src="${(item.posterurl && item.posterurl.startsWith('/')) ? ('https://image.tmdb.org/t/p/w500' + item.posterurl) : (item.posterurl || 'https://placehold.co/40x60')}" class="w-10 h-[60px] object-cover rounded-md">
+                                <div>
+                                    <div class="font-semibold text-white mb-1">${item.title}</div>
+                                    <div class="text-[0.8rem] text-brand-gold capitalize">${item._type} ${item.releasedate ? `• ${item.releasedate.split('-')[0]}` : ''}</div>
+                                </div>
+                            </div>
+                        `).join('');
+                    } catch (err) {
+                        dropdown.innerHTML = '<div class="text-red-500 text-sm mt-1" style="padding: 5px 10px;">Network error occurred.</div>';
+                    }
+                }, 400);
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.style.display = 'none';
+                }
+            });
+
+            if (!query) {
+                document.getElementById('loading-spinner').innerHTML = "Enter a search term above.";
+                return;
+            }
+
+            // Fetch concurrently across the two main smart-search enabled routes
+            try {
+                const [rMovies, rSeries] = await Promise.all([
+                    fetch(`/movies/search?q=${encodeURIComponent(query)}`).then(res => res.json()).catch(() => ({results: []})),
+                    fetch(`/series/search?q=${encodeURIComponent(query)}`).then(res => res.json()).catch(() => ({results: []}))
+                ]);
+
+                // Map results with a type attached so clicks link properly
+                let combined = [];
+                if (rMovies.results) combined.push(...rMovies.results.map(x => ({...x, _type: 'movie'})));
+                if (rSeries.results) combined.push(...rSeries.results.map(x => ({...x, _type: 'series'})));
+                
+                // Shuffle logic to randomly mix the results (or we could sort by rating if available, TMDB imports start with null rating)
+                combined.sort((a,b) => (b.avgrating || 0) - (a.avgrating || 0));
+
+                document.getElementById('loading-spinner').style.display = 'none';
+                document.getElementById('results-content').style.display = 'block';
+
+                const grid = document.getElementById('search-results-grid');
+                
+                if (combined.length === 0) {
+                    document.getElementById('no-results-msg').style.display = 'block';
+                    return;
+                }
+
+                combined.forEach(media => {
+                    const card = document.createElement('div');
+                    card.className = 'relative rounded-xl overflow-hidden aspect-[2/3] cursor-pointer transition bg-[#111] group';
+                    card.onclick = () => window.location.href = `/${media._type}.html?id=${media.id}`;
+                    
+                    const ratingStr = media.avgrating ? media.avgrating.toFixed(1) : 'NR';
+                    const fallbackPoster = 'https://placehold.co/300x450/111/fff?text=No+Poster';
+                    
+                    card.innerHTML = `
+                        <img src="${media.posterurl && media.posterurl.startsWith('/') ? 'https://image.tmdb.org/t/p/w500'+media.posterurl : (media.posterurl || fallbackPoster)}" alt="${media.title}" class="w-full h-full object-cover transition duration-500 group-hover:scale-105">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-5 opacity-100 transition duration-300">
+                            <div class="absolute top-2.5 right-2.5 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-lg font-bold text-[0.9rem] text-brand-gold flex items-center gap-1">★ ${ratingStr}</div>
+                            <div class="text-lg font-semibold mb-1">${media.title}</div>
+                            <div class="text-sm text-brand-gray">${media.releasedate ? media.releasedate.split('-')[0] : 'Unknown'} • <span class="capitalize text-brand-gold font-semibold">${media._type}</span></div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+
+            } catch(e) {
+                console.error("Search failed:", e);
+                document.getElementById('loading-spinner').innerHTML = `<span class="text-red-500 text-sm mt-1">Search encountered a network error. Try again!</span>`;
+            }
+        });
+    </script>
+</body>
+</html>

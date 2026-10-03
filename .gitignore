@@ -1,0 +1,16 @@
+# secrets
+.env
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+MyProjectEnv/
+
+# editors / OS
+.vscode/
+.idea/
+.DS_Store
+__MACOSX/
+Thumbs.db

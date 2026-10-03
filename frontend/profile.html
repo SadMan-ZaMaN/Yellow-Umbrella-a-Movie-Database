@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Yellow Umbrella - Your Profile</title>
+<link href="/statics/style.css" rel="stylesheet"/>
+
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: {
+            dark: '#0B0C10',
+            second: '#1f2833',
+            gold: '#fbbf24',
+            goldhover: '#f59e0b',
+            red: '#d97706',
+            gray: '#c5c6c7'
+          }
+        },
+        fontFamily: {
+          inter: ['Inter', 'sans-serif'],
+          outfit: ['Outfit', 'sans-serif'],
+        }
+      }
+    }
+  }
+</script>
+</head>
+<body class="bg-brand-dark text-white min-h-screen flex flex-col font-sans">
+<!-- Navigation -->
+<nav class="sticky top-0 z-[1000] bg-brand-dark/80 backdrop-blur-xl border-b border-white/10">
+<div class="flex justify-between items-center h-[70px] w-[90%] max-w-[1400px] mx-auto">
+<a class="font-outfit text-3xl font-extrabold text-brand-gold tracking-wide drop-shadow-[0_0_15px_rgba(251,191,36,0.8)] hover:drop-shadow-[0_0_25px_rgba(251,191,36,1)] transition-all" href="/">Yellow<span style="color: white; text-shadow: 0 0 10px rgba(255,255,255,0.8);">Umbrella</span></a>
+<div class="flex gap-7 items-center">
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/">Home</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/top_rated.html">Top Rated</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/celebrities.html">Top Celebrities</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/events.html">Awards</a>
+</div>
+<div class="flex gap-4 items-center">
+<!-- Guests -->
+<a class="px-4 py-2 rounded-lg font-semibold text-[0.9rem] cursor-pointer transition bg-transparent border border-white/10 border border-brand-gold text-brand-gold hover:bg-brand-gold/10 hover:shadow-[0_0_15px_rgba(251,191,36,0.3)] guest-only" href="/login.html">Sign In</a>
+<a class="px-4 py-2 rounded-lg font-semibold text-[0.9rem] cursor-pointer transition bg-brand-gold border border-brand-gold text-brand-dark hover:bg-black/40 border border-white/10 hover:border-white hover:text-brand-dark guest-only" href="/login.html">Sign Up</a>
+<!-- Authenticated Users -->
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group active auth-only auth-hidden display-username" href="/profile.html" style="font-weight: 700;"></a>
+<button class="px-4 py-2 rounded-lg font-semibold text-[0.9rem] cursor-pointer transition bg-transparent border border-white/10 border border-brand-gold text-brand-gold hover:bg-brand-gold/10 hover:shadow-[0_0_15px_rgba(251,191,36,0.3)] auth-only auth-hidden" id="logout-btn">Logout</button>
+</div>
+</div>
+</nav>
+<!-- Main Content Grid -->
+<main class="w-[90%] max-w-[1400px] mx-auto flex-1 py-10">
+<!-- Auth Wall -->
+<div class="text-center hidden mt-[100px]" id="auth-wall">
+<h2 class="text-brand-red text-2xl font-bold mb-2">Access Denied.</h2>
+<p class="text-brand-gray mb-5">You must be logged in to view your profile dashboard.</p>
+<a class="bg-brand-red text-white py-3 px-6 rounded-lg font-semibold text-base hover:bg-[currentColor] hover:shadow-[0_0_15px_rgba(229,9,20,0.4)] hover:-translate-y-0.5 transition inline-flex items-center justify-center gap-2" href="/login.html">Go to Login</a>
+</div>
+<div id="profile-content" class="hidden">
+<div class="flex justify-between items-end mb-[30px]">
+<h1 class="text-3xl font-bold font-outfit relative inline-block after:absolute after:w-2/5 after:h-1 after:-bottom-2.5 after:left-0 after:bg-brand-red after:rounded-sm">My Dashboard</h1>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-[350px_1fr] gap-[30px]">
+<!-- Sidebar -->
+<div class="bg-black/40 backdrop-blur-xl border border-white/10 rounded-[20px] p-[30px] shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] self-start text-center">
+<div class="relative w-[100px] h-[100px] mx-auto mb-5">
+    <div id="profile-picture-div" class="w-full h-full rounded-full border-[4px] border-brand-dark shadow-[0_0_20px_rgba(251,191,36,0.3)] bg-gradient-to-tr from-brand-red to-brand-gold flex items-center justify-center text-5xl font-bold text-brand-dark">
+        ...
+    </div>
+    <img id="profile-picture-img" src="" class="hidden w-full h-full rounded-full border-[4px] border-brand-dark shadow-[0_0_20px_rgba(251,191,36,0.3)] object-cover bg-brand-dark" alt="Profile">
+</div>
+<h2 class="display-username mb-1 text-2xl font-bold">...</h2>
+<p id="profile-email" class="text-brand-gray mb-[15px]">Loading...</p>
+<p id="profile-joined" class="text-[0.85rem] text-[#888]">Member since: Loading...</p>
+<hr class="border-t border-white/10 my-[25px]"/>
+<a class="w-full mb-2.5 flex justify-center items-center py-3 px-6 rounded-lg font-semibold text-base transition border border-brand-gold text-brand-gold bg-transparent border border-white/10 hover:bg-brand-gold/10 hover:shadow-[0_0_15px_rgba(251,191,36,0.3)] hover:-translate-y-0.5" href="/lists.html">My Watchlists &amp; Custom Lists</a>
+<a class="w-full flex py-3 px-6 justify-center bg-black/20 text-white rounded-lg font-semibold text-base hover:bg-[currentColor] hover:bg-brand-red hover:shadow-[0_0_15px_rgba(229,9,20,0.4)] hover:-translate-y-0.5 transition" href="/events.html">📅 Watch Events</a>
+</div>
+<!-- Main Activity -->
+<div>
+<!-- Welcome Box -->
+<div class="bg-black/40 backdrop-blur-xl border border-white/10 rounded-[20px] p-[30px] shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] mb-[30px] bg-gradient-to-r from-brand-red/10 to-transparent">
+<h3 class="text-2xl font-bold" id="welcome-heading">Welcome back, <span class="display-username text-brand-gold"></span>!</h3>
+<p class="text-brand-gray mt-2.5">Check out the latest trending movies or continue managing your watchlist below.</p>
+</div>
+        <!-- User Stats Panel -->
+        <h2 class="text-2xl font-bold">Your Cinematic Journey</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mt-5">
+            <!-- Stat 1 -->
+            <div class="bg-black/40 backdrop-blur-xl border border-white/10 rounded-[20px] p-5 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] text-center">
+                <h3 class="text-[2.5rem] font-bold text-brand-gold" id="stat-reviews">--</h3>
+                <p class="text-brand-gray text-[0.9rem]">Reviews Written</p>
+            </div>
+            <!-- Stat 2 -->
+            <div class="bg-black/40 backdrop-blur-xl border border-white/10 rounded-[20px] p-5 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] text-center">
+                <h3 class="text-[2.5rem] font-bold text-brand-red" id="stat-watchlist">--</h3>
+                <p class="text-brand-gray text-[0.9rem]">Items Watchlisted</p>
+            </div>
+            <!-- Stat 3 -->
+            <div class="bg-black/40 backdrop-blur-xl border border-white/10 rounded-[20px] p-5 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] text-center">
+                <h3 class="text-[2.5rem] font-bold text-[#fbbf24]" id="stat-recommends">--</h3>
+                <p class="text-brand-gray text-[0.9rem]">Total Recommends</p>
+            </div>
+        </div>
+
+        <!-- Watch Events Hub -->
+        <div class="mt-[50px]">
+            <div class="flex justify-between items-end border-b border-white/10 pb-4 mb-8">
+                <h2 class="text-2xl font-bold font-outfit m-0">Watch Events Hub</h2>
+                <div class="flex gap-4">
+                    <button class="event-tab active text-brand-gold font-bold border-b-2 border-brand-gold pb-1 px-2" id="btn-my-events">My Events</button>
+                    <button class="event-tab text-brand-gray hover:text-white transition pb-1 px-2" id="btn-explore-events">Explore Community</button>
+                </div>
+            </div>
+            
+            <div id="events-container" class="grid grid-cols-1 gap-5">
+                <div class="text-center py-10 text-brand-gray">Loading events...</div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+</main>
+<!-- Scripts -->
+<script src="/statics/app.js?v=4"></script>
+<script>requireAuth();</script>
+<script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!isLoggedIn()) {
+                document.getElementById('auth-wall').style.display = 'block';
+                return;
+            }
+
+            document.getElementById('profile-content').classList.remove('hidden');
+            
+            const user = getUser();
+            
+            // Dynamic Welcome Logic
+            const welcomeState = localStorage.getItem('welcome_state') || 'back';
+            const welcomePrefix = welcomeState === 'aboard' ? 'Welcome aboard' : 'Welcome back';
+            document.getElementById('welcome-heading').innerHTML = `${welcomePrefix}, <span class="display-username text-brand-gold"></span>!`;
+            
+            // Render username spans manually after innerHTML injection above clears it
+            document.querySelectorAll('.display-username').forEach(el => el.textContent = user.username);
+            
+            // Clear flag after displaying
+            localStorage.removeItem('welcome_state');
+
+            try {
+                // profile details (email, join date) need the token
+                const profile = await apiFetch(`/users/${user.userid}`);
+                
+                document.getElementById('profile-email').textContent = profile.email;
+                
+                const date = new Date(profile.joindate);
+                document.getElementById('profile-joined').textContent = `Member since: ${date.toLocaleDateString()}`;
+                
+                // Set initial
+                const profilePicDiv = document.getElementById('profile-picture-div');
+                const profilePicImg = document.getElementById('profile-picture-img');
+                
+                if (profile.photourl && profile.photourl.trim() !== '') {
+                    profilePicImg.src = profile.photourl;
+                    profilePicImg.classList.remove('hidden');
+                    profilePicDiv.classList.add('hidden');
+                } else {
+                    const initial = user.username ? user.username.charAt(0).toUpperCase() : '?';
+                    profilePicDiv.textContent = initial;
+                    profilePicDiv.classList.remove('hidden');
+                    profilePicImg.classList.add('hidden');
+                }
+                
+            } catch (err) {
+                console.error("Failed to load profile:", err);
+                document.getElementById('profile-email').textContent = "Error loading details.";
+            }
+
+            try {
+                const stats = await apiFetch(`/users/${user.userid}/stats`);
+                document.getElementById('stat-reviews').textContent = stats.reviews_written || 0;
+                document.getElementById('stat-watchlist').textContent = stats.items_watchlisted || 0;
+                document.getElementById('stat-recommends').textContent = stats.total_recommends || 0;
+            } catch (err) {
+                console.error("Failed to load stats:", err);
+            }
+
+            // --- Events Hub Logic ---
+            const eventsContainer = document.getElementById('events-container');
+            const btnMyEvents = document.getElementById('btn-my-events');
+            const btnExploreEvents = document.getElementById('btn-explore-events');
+
+            const renderEvents = (events, type) => {
+                eventsContainer.innerHTML = '';
+                if (!events || events.length === 0) {
+                    eventsContainer.innerHTML = `<div class="text-center py-20 bg-[#111] rounded-2xl border border-dashed border-white/10 text-brand-gray">
+                        ${type === 'my' ? "You aren't associated with any events yet. Join one from the 'Explore' tab or create one from a movie page!" : "No community events found."}
+                    </div>`;
+                    return;
+                }
+
+                events.forEach(ev => {
+                    const card = document.createElement('div');
+                    card.className = "bg-black/40 border border-white/10 rounded-xl p-5 hover:border-brand-gold/50 transition flex flex-col md:flex-row gap-5 items-center";
+                    
+                    const time = new Date(ev.time).toLocaleString();
+                    const poster = ev.poster ? (ev.poster.startsWith('http') ? ev.poster : `https://image.tmdb.org/t/p/w200${ev.poster}`) : 'https://placehold.co/100x150/111/fff?text=No+Poster';
+
+                    card.innerHTML = `
+                        <img src="${poster}" class="w-[80px] h-[120px] object-cover rounded-lg shadow-lg">
+                        <div class="flex-1 text-center md:text-left">
+                            <h4 class="text-xl font-bold mb-1">${escapeHtml(ev.title)}</h4>
+                            <div class="text-brand-gold text-sm font-semibold mb-2">${escapeHtml(ev.media)}</div>
+                            <div class="text-brand-gray text-xs flex flex-wrap justify-center md:justify-start gap-4">
+                                <span>📅 ${time}</span>
+                                <span>📺 ${escapeHtml(ev.platform || 'TBD')}</span>
+                                <span>👤 Host: ${escapeHtml(ev.host)}</span>
+                                <span>👥 ${ev.rsvp_count} Attendees</span>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-2 w-full md:w-auto">
+                            ${ev.user_role === 'host' ? `<span class="bg-brand-red/20 text-brand-red px-3 py-1 rounded-md text-xs font-bold text-center">YOU ARE HOSTING</span>` : ''}
+                            <button class="bg-brand-gold text-brand-dark py-2 px-6 rounded-lg font-bold text-sm hover:bg-brand-goldhover transition w-full" onclick="window.location.href='/events.html?id=${ev.id}'">View Details</button>
+                        </div>
+                    `;
+                    eventsContainer.appendChild(card);
+                });
+            };
+
+            const loadUserEvents = async () => {
+                eventsContainer.innerHTML = '<div class="text-center py-10 text-brand-gray">Loading your events...</div>';
+                try {
+                    const events = await apiFetch(`/events/user/${user.userid}`);
+                    renderEvents(events, 'my');
+                } catch (err) {
+                    eventsContainer.innerHTML = '<div class="text-center py-10 text-red-500 text-sm">Failed to load your events.</div>';
+                }
+            };
+
+            const loadAllEvents = async () => {
+                eventsContainer.innerHTML = '<div class="text-center py-10 text-brand-gray">Scanning the community...</div>';
+                try {
+                    const events = await apiFetch(`/events/`);
+                    renderEvents(events, 'explore');
+                } catch (err) {
+                    eventsContainer.innerHTML = '<div class="text-center py-10 text-red-500 text-sm">Failed to load community events.</div>';
+                }
+            };
+
+            btnMyEvents.onclick = () => {
+                btnMyEvents.className = 'event-tab active text-brand-gold font-bold border-b-2 border-brand-gold pb-1 px-2';
+                btnExploreEvents.className = 'event-tab text-brand-gray hover:text-white transition pb-1 px-2';
+                loadUserEvents();
+            };
+
+            btnExploreEvents.onclick = () => {
+                btnExploreEvents.className = 'event-tab active text-brand-gold font-bold border-b-2 border-brand-gold pb-1 px-2';
+                btnMyEvents.className = 'event-tab text-brand-gray hover:text-white transition pb-1 px-2';
+                loadAllEvents();
+            };
+
+            // Init load
+            loadUserEvents();
+        });
+    </script>
+</body>
+</html>

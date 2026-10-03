@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Yellow Umbrella - At the right place, at the right time.</title>
+
+
+<link href="/statics/style.css" rel="stylesheet"/>
+<style type="text/tailwindcss">
+        @layer components {
+            .trending-tab {
+                @apply bg-transparent border border-white/10 text-brand-gray border-none text-base font-semibold cursor-pointer transition px-4 py-1.5 border-b-2 border-transparent hover:text-white;
+            }
+            .trending-tab.active {
+                @apply text-brand-gold border-brand-gold;
+            }
+        }
+    </style>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: {
+            dark: '#0B0C10',
+            second: '#1f2833',
+            gold: '#fbbf24',
+            goldhover: '#f59e0b',
+            red: '#d97706',
+            gray: '#c5c6c7'
+          }
+        },
+        fontFamily: {
+          inter: ['Inter', 'sans-serif'],
+          outfit: ['Outfit', 'sans-serif'],
+        }
+      }
+    }
+  }
+</script>
+</head>
+<body class="bg-brand-dark text-white min-h-screen flex flex-col font-sans">
+<!-- Navigation -->
+<nav class="sticky top-0 z-[1000] bg-brand-dark/80 backdrop-blur-xl border-b border-white/10">
+<div class="flex justify-between items-center h-[70px] w-[90%] max-w-[1400px] mx-auto">
+<a class="font-outfit text-3xl font-extrabold text-brand-gold tracking-wide drop-shadow-[0_0_15px_rgba(251,191,36,0.8)] hover:drop-shadow-[0_0_25px_rgba(251,191,36,1)] transition-all" href="/">Yellow<span style="color: white; text-shadow: 0 0 10px rgba(255,255,255,0.8);">Umbrella</span></a>
+<div class="flex gap-7 items-center">
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group active" href="/">Home</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/top_rated.html">Top Rated</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/celebrities.html">Top Celebrities</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/events.html">Awards</a>
+</div>
+<div class="flex gap-4 items-center">
+<!-- Guests -->
+<a class="px-4 py-2 rounded-lg font-semibold text-[0.9rem] cursor-pointer transition bg-transparent border border-white/10 border border-brand-gold text-brand-gold hover:bg-brand-gold/10 hover:shadow-[0_0_15px_rgba(251,191,36,0.3)] guest-only" href="/login.html">Sign In</a>
+<a class="px-4 py-2 rounded-lg font-semibold text-[0.9rem] cursor-pointer transition bg-brand-gold border border-brand-gold text-brand-dark hover:bg-black/40 border border-white/10 hover:border-white hover:text-brand-dark guest-only" href="/login.html">Sign Up</a>
+<!-- Authenticated Users -->
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group auth-only auth-hidden display-username flex items-center h-full" href="/profile.html" style="font-weight: 700;"></a>
+<button class="px-4 py-2 rounded-lg font-semibold text-[0.9rem] cursor-pointer transition bg-transparent border border-white/10 border border-brand-gold text-brand-gold hover:bg-brand-gold/10 hover:shadow-[0_0_15px_rgba(251,191,36,0.3)] auth-only auth-hidden" id="logout-btn">Logout</button>
+</div>
+</div>
+</nav>
+<!-- Hero Section / Slideshow -->
+<header class="relative w-full overflow-hidden bg-brand-dark" id="hero-slider" style="height: 600px;">
+<div id="hero-slides-container" class="w-full h-full relative">
+<!-- Slides JS Injected Here -->
+</div>
+<!-- Progress Indicators -->
+<div class="absolute bottom-[30px] left-0 right-0 flex justify-center gap-2 z-[100]" id="hero-dots"></div>
+</header>
+<!-- Search Bar Container (Moved Just Below Hero) -->
+<div class="bg-brand-dark pb-12 border-b border-white/10 text-center">
+<div class="w-[90%] max-w-[1400px] mx-auto py-12 relative mt-[20px] z-[200]">
+<h2 class="text-3xl font-outfit font-bold text-white mb-6 drop-shadow-md">At the right place, at the right time.</h2>
+<p class="text-brand-gray mb-[60px] drop-shadow">Explore our expansive cinematic database.</p>
+<!-- Search Bar with Autocomplete -->
+<div class="relative inline-block w-full max-w-[600px]">
+<div class="bg-black/40 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] flex items-center w-full p-2.5 rounded-full">
+<input autocomplete="off" class="w-full text-white py-3 px-4 font-sans text-base transition focus:outline-none placeholder-brand-gray/50 border-none bg-transparent border border-white/10 shadow-none focus:ring-0" id="global-search" placeholder="Search for movies, series and more" type="text"/>
+<button class="bg-brand-red text-white py-3 px-8 rounded-full font-semibold text-base hover:bg-[currentColor] hover:shadow-[0_0_15px_rgba(229,9,20,0.4)] hover:-translate-y-0.5 transition inline-flex items-center justify-center gap-2 ml-2.5" id="search-btn">Search</button>
+</div>
+<!-- Dropdown -->
+<div class="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-2.5 shadow-[0_10px_40px_rgba(0,0,0,0.8)] z-[1000] absolute top-full left-0 right-0 mt-2.5 text-left max-h-[400px] overflow-y-auto hidden" id="autocomplete-dropdown">
+</div>
+</div>
+</div>
+</div>
+<!-- Main Content Grid -->
+<main class="w-[90%] max-w-[1400px] mx-auto flex-1 py-10">
+<!-- Top Rated Movies -->
+<!-- Top Rated Media -->
+<div class="flex justify-between items-end border-b border-white/10 pb-4 mb-8">
+<h2 class="text-3xl font-bold font-['Outfit'] relative after:absolute after:w-2/5 after:h-1 after:-bottom-2.5 after:left-0 after:bg-brand-red after:rounded-sm m-0">Trending Now</h2>
+<div class="flex gap-2.5" id="trending-tabs">
+<button class="trending-tab active" data-type="all">All</button>
+<button class="trending-tab" data-type="movie">Movies</button>
+<button class="trending-tab" data-type="series">Series</button>
+<button class="trending-tab" data-type="anime">Anime</button>
+<button class="trending-tab" data-type="game">Games</button>
+</div>
+</div>
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-12" id="trending-movies">
+        <!-- Populated via JS -->
+        <div class="text-center col-span-full text-brand-gray mt-5">
+            <span class="loading-spinner">Loading database...</span>
+        </div>
+    </div>
+
+    <!-- Award Ceremonies Section -->
+    <div class="mt-20">
+        <div class="flex justify-between items-end border-b border-white/10 pb-4 mb-8">
+            <h2 class="text-3xl font-bold font-['Outfit'] relative after:absolute after:w-2/5 after:h-1 after:-bottom-2.5 after:left-0 after:bg-brand-gold after:rounded-sm m-0">Award Ceremonies</h2>
+            <a href="/events.html" class="text-brand-gold hover:text-white transition font-semibold text-sm flex items-center gap-2">View All Awards <span>→</span></a>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8" id="award-events-list">
+            <!-- Populated via JS -->
+        </div>
+    </div>
+</main>
+<!-- Scripts -->
+<script src="/statics/app.js?v=4"></script>
+<script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const container = document.getElementById('trending-movies');
+            let allTrendingData = [];
+
+            const renderTrending = (filterType) => {
+                container.innerHTML = '';
+                
+                let filtered = allTrendingData;
+                if (filterType !== 'all') {
+                    filtered = filtered.filter(item => item._type === filterType);
+                }
+
+                if (filtered.length === 0) {
+                    container.innerHTML = '<div class="col-span-full text-brand-gray text-center mt-5">No recent trending items found for this category.</div>';
+                    return;
+                }
+
+                if (filterType === 'all') {
+                    // Randomize contents in the "All" section as requested
+                    filtered = [...filtered].sort(() => Math.random() - 0.5);
+                }
+
+                    // Show top 24 per category
+                    filtered.slice(0, 24).forEach(media => {
+                        const card = document.createElement('div');
+                        card.className = 'relative rounded-xl overflow-hidden aspect-[2/3] cursor-pointer transition bg-[#111] group';
+                        card.onclick = () => window.location.href = `/${media._type}.html?id=${media.id}`;
+                        
+                        const ratingStr = media.avgrating ? media.avgrating.toFixed(1) : 'NR';
+                        const fallbackPoster = 'https://placehold.co/300x450/111111/ffffff?text=No+Poster';
+                        let pUrl = (media.posterurl && media.posterurl !== 'None' && media.posterurl !== 'null' && media.posterurl.trim() !== '') ? media.posterurl : fallbackPoster;
+                        if (pUrl && !pUrl.startsWith('http') && pUrl.startsWith('/')) { pUrl = 'https://image.tmdb.org/t/p/w500' + pUrl; }
+                        
+                        card.innerHTML = `
+                            <img src="${pUrl}" alt="${media.title}" onerror="this.onerror=null;this.src='https://placehold.co/300x450/111111/ffffff?text=No+Poster';" class="w-full h-full object-cover transition duration-500 group-hover:scale-105">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-5 opacity-100 transition duration-300">
+                                <div class="absolute top-2.5 right-2.5 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-lg font-bold text-[0.9rem] text-brand-gold flex items-center gap-1">★ ${ratingStr}</div>
+                                <div class="text-lg font-semibold mb-1">${media.title}</div>
+                                <div class="text-sm text-brand-gray">${media.releasedate ? media.releasedate.split('-')[0] : 'Unknown'} • <span class="capitalize text-brand-gold font-semibold">${media._type}</span></div>
+                            </div>
+                        `;
+                        container.appendChild(card);
+                    });
+                };
+                
+                // --- Slideshow Logic ---
+                let slideshowInterval;
+                const renderSlideshow = (topItems) => {
+                    const slideContainer = document.getElementById('hero-slides-container');
+                    const dotsContainer = document.getElementById('hero-dots');
+                    slideContainer.innerHTML = '';
+                    dotsContainer.innerHTML = '';
+
+                    if (topItems.length === 0) return;
+
+                    let currentIndex = 0;
+
+                    // Ensure we have wide backdrops if possible, else fallback to standard poster or empty
+                    const fallbackBg = 'https://placehold.co/1400x600/111/fff?text=Welcome';
+
+                    topItems.forEach((item, index) => {
+                        const slide = document.createElement('div');
+                        slide.className = `absolute inset-0 transition-opacity duration-1000 ease-in-out flex flex-col justify-end ${index === 0 ? 'opacity-100 z-10' : 'opacity-0 z-0'}`;
+                        slide.id = `hero-slide-${index}`;
+                        
+                        // Use poster URL if available, otherwise fallback
+                        let bgImg = (item.posterurl && item.posterurl !== 'None' && item.posterurl !== 'null' && item.posterurl.trim() !== '') ? item.posterurl : fallbackBg;
+                        if (bgImg && !bgImg.startsWith('http') && bgImg.startsWith('/')) { bgImg = 'https://image.tmdb.org/t/p/original' + bgImg; }
+                        
+                        const ratingText = item.avgrating ? `★ ${item.avgrating.toFixed(1)}` : 'NR';
+                        
+                        slide.innerHTML = `
+                            <div class="absolute inset-0 bg-cover bg-center bg-no-repeat blur-xl opacity-30" style="background-image: url('${bgImg}');"></div>
+                            <div class="absolute inset-y-10 right-[10%] w-[40%] md:w-[35%] lg:w-[25%] z-0 flex justify-end">
+                                <img src="${bgImg}" class="h-full object-contain object-right drop-shadow-2xl rounded-xl" />
+                            </div>
+                            <div class="absolute inset-0 bg-gradient-to-t from-[#0B0C10] via-[#0B0C10]/80 to-transparent z-10 pointer-events-none"></div>
+                            <div class="absolute inset-0 bg-gradient-to-r from-[#0B0C10] via-brand-dark/80 to-transparent z-10 w-full md:w-3/4 pointer-events-none"></div>
+                            <div class="relative z-20 w-[90%] max-w-[1400px] mx-auto pb-[100px] cursor-pointer group flex flex-col justify-end h-full" onclick="window.location.href='/${item._type}.html?id=${item.id}'">
+                                <span class="inline-block px-3 py-1 bg-brand-gold text-brand-dark font-bold rounded text-sm mb-3">Trending ${item._type.toUpperCase()}</span>
+                                <h2 class="text-5xl md:text-7xl font-bold text-white mb-2 group-hover:text-brand-gold transition duration-300 drop-shadow-lg">${item.title}</h2>
+                                <p class="text-xl text-brand-gray max-w-2xl drop-shadow-md flex items-center gap-3">
+                                    <span class="text-brand-red font-bold">${ratingText}</span> 
+                                    <span>•</span>
+                                    <span>${item.releasedate ? item.releasedate.split('-')[0] : 'Unknown'}</span>
+                                </p>
+                            </div>
+                        `;
+                        
+                        // Pause on hover
+                        slide.addEventListener('mouseenter', () => clearInterval(slideshowInterval));
+                        slide.addEventListener('mouseleave', () => startSlideshow());
+                        
+                        slideContainer.appendChild(slide);
+
+                        // Dots
+                        const dot = document.createElement('button');
+                        dot.className = `w-3 h-3 rounded-full transition-all duration-300 ${index === 0 ? 'bg-brand-gold scale-125' : 'bg-brand-gray/50 hover:bg-black/40 border border-white/10'}`;
+                        dot.onclick = () => goToSlide(index);
+                        dotsContainer.appendChild(dot);
+                    });
+
+                    function goToSlide(index) {
+                        // Reset all
+                        for (let i = 0; i < topItems.length; i++) {
+                            const sl = document.getElementById(`hero-slide-${i}`);
+                            sl.classList.remove('opacity-100', 'z-10');
+                            sl.classList.add('opacity-0', 'z-0');
+                            
+                            const d = dotsContainer.children[i];
+                            d.classList.remove('bg-brand-gold', 'scale-125');
+                            d.classList.add('bg-brand-gray/50');
+                        }
+                        
+                        // Set active
+                        const actSlide = document.getElementById(`hero-slide-${index}`);
+                        actSlide.classList.remove('opacity-0', 'z-0');
+                        actSlide.classList.add('opacity-100', 'z-10');
+                        
+                        const actDot = dotsContainer.children[index];
+                        actDot.classList.remove('bg-brand-gray/50');
+                        actDot.classList.add('bg-brand-gold', 'scale-125');
+                        
+                        currentIndex = index;
+                    }
+
+                    function startSlideshow() {
+                        clearInterval(slideshowInterval);
+                        slideshowInterval = setInterval(() => {
+                            let next = (currentIndex + 1) % topItems.length;
+                            goToSlide(next);
+                        }, 5000); // Change slide every 5 seconds
+                    }
+
+                    startSlideshow();
+                };
+
+            const loadTrending = async () => {
+                try {
+                    // Fetch from all media endpoints
+                    const [movies, series, anime, games] = await Promise.all([
+                        fetch('/movies/').then(r=>r.json()).catch(()=>[]),
+                        fetch('/series/').then(r=>r.json()).catch(()=>[]),
+                        fetch('/anime/').then(r=>r.json()).catch(()=>[]),
+                        fetch('/games/').then(r=>r.json()).catch(()=>[])
+                    ]);
+
+                    let combined = [];
+                    if (Array.isArray(movies)) combined.push(...movies.map(m => ({...m, _type: 'movie'})));
+                    if (Array.isArray(series)) combined.push(...series.map(s => ({...s, _type: 'series'})));
+                    if (Array.isArray(anime)) combined.push(...anime.map(a => ({...a, _type: 'anime'})));
+                    if (Array.isArray(games)) combined.push(...games.map(g => ({...g, _type: 'game'})));
+
+                    // Sort by rating
+                    combined.sort((a,b) => (b.avgrating || 0) - (a.avgrating || 0));
+
+                    // Extract Top 5 absolute best for the slideshow
+                    const top5Slideshow = combined.slice(0, 5);
+                    renderSlideshow(top5Slideshow);
+
+                    allTrendingData = combined;
+                    renderTrending('all');
+
+                } catch (err) {
+                    container.innerHTML = `<div class="error-msg text-center col-span-full">Failed to load trending media.</div>`;
+                    console.error("Trending load error:", err);
+                }
+            };
+
+            const loadAwards = async () => {
+                const awardList = document.getElementById('award-events-list');
+                try {
+                    const res = await fetch('/awards/');
+                    const awards = await res.json();
+                    
+                    if (!awards || awards.length === 0) {
+                        awardList.innerHTML = '<div class="col-span-full text-brand-gray">No award ceremonies found.</div>';
+                        return;
+                    }
+
+                    awardList.innerHTML = awards.slice(0, 3).map(award => `
+                        <div class="group relative bg-[#111] rounded-2xl overflow-hidden border border-white/10 hover:border-brand-gold/50 cursor-pointer transition-all duration-300" onclick="window.location.href='/events.html?id=${award.id}'">
+                            <div class="aspect-[16/9] relative overflow-hidden">
+                                <img src="${award.imageurl}" alt="${award.name}" class="w-full h-full object-cover transition duration-700 group-hover:scale-110 group-hover:rotate-1">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+                            </div>
+                            <div class="p-6 relative">
+                                <div class="text-brand-gold text-xs font-bold uppercase tracking-widest mb-2">Major Event</div>
+                                <h3 class="text-xl font-bold group-hover:text-brand-gold transition-colors">${award.name}</h3>
+                                <div class="mt-4 flex items-center gap-2 text-sm text-brand-gray">
+                                    <span>🏆 Hall of Fame</span>
+                                    <span>•</span>
+                                    <span>Annual Ceremony</span>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } catch (err) {
+                    awardList.innerHTML = '<div class="col-span-full text-red-500">Failed to load award ceremonies.</div>';
+                }
+            };
+            
+            await Promise.all([loadTrending(), loadAwards()]);
+
+            // Bind the filter tabs
+            document.querySelectorAll('.trending-tab').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    document.querySelectorAll('.trending-tab').forEach(t => t.classList.remove('active'));
+                    e.target.classList.add('active');
+                    renderTrending(e.target.getAttribute('data-type'));
+                });
+            });
+
+            // Bind Search Functionality
+            const searchBtn = document.getElementById('search-btn');
+            const searchInput = document.getElementById('global-search');
+            
+            const handleSearch = () => {
+                const query = searchInput.value.trim();
+                if (query) {
+                    // Redirect to search results page
+                    window.location.href = `/search.html?q=${encodeURIComponent(query)}`;
+                }
+            };
+            
+            searchBtn.addEventListener('click', handleSearch);
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleSearch();
+            });
+
+            // Autocomplete Logic
+            const dropdown = document.getElementById('autocomplete-dropdown');
+            let debounceTimer;
+
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.trim();
+                if (!query || query.length < 2) {
+                    dropdown.style.display = 'none';
+                    return;
+                }
+                
+                clearTimeout(debounceTimer);
+                dropdown.style.display = 'block';
+                dropdown.innerHTML = '<div class="text-brand-gray px-2.5 py-1.5">Searching...</div>';
+
+                debounceTimer = setTimeout(async () => {
+                    try {
+                        const [mRes, sRes] = await Promise.all([
+                            fetch(`/movies/search?q=${encodeURIComponent(query)}`).then(r=>r.json()).catch(()=>({results:[]})),
+                            fetch(`/series/search?q=${encodeURIComponent(query)}`).then(r=>r.json()).catch(()=>({results:[]}))
+                        ]);
+                        
+                        let combined = [];
+                        if(mRes.results) combined.push(...mRes.results.map(x=>({...x, _type:'movie'})));
+                        if(sRes.results) combined.push(...sRes.results.map(x=>({...x, _type:'series'})));
+                        
+                        // Sort by rating (if exist), take top 5
+                        combined.sort((a,b) => (b.avgrating || 0) - (a.avgrating || 0));
+                        combined = combined.slice(0, 5); 
+
+                        if (combined.length === 0) {
+                            dropdown.innerHTML = '<div class="text-[#777] px-2.5 py-1.5">No matches found...</div>';
+                            return;
+                        }
+
+                        dropdown.innerHTML = combined.map(item => `
+                            <div class="flex items-center gap-[15px] p-2.5 rounded-xl cursor-pointer transition-colors duration-200 hover:bg-black/40 border border-white/10/5" 
+                                 onclick="window.location.href='/${item._type}.html?id=${item.id}'">
+                                <img src="${(item.posterurl && item.posterurl.startsWith('/')) ? ('https://image.tmdb.org/t/p/w500' + item.posterurl) : (item.posterurl || 'https://placehold.co/40x60')}" class="w-10 h-[60px] object-cover rounded-md">
+                                <div>
+                                    <div class="font-semibold text-white mb-1">${item.title}</div>
+                                    <div class="text-[0.8rem] text-brand-gold capitalize">${item._type} ${item.releasedate ? `• ${item.releasedate.split('-')[0]}` : ''}</div>
+                                </div>
+                            </div>
+                        `).join('');
+                    } catch (err) {
+                        dropdown.innerHTML = '<div class="text-red-500 text-sm mt-1 px-2.5 py-1.5">Network error occurred.</div>';
+                    }
+                }, 400); // Wait 400ms after user stops typing
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

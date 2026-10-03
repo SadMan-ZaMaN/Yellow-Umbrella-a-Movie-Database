@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Yellow Umbrella - Watch Events</title>
+    <link href="/statics/style.css" rel="stylesheet"/>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: {
+            dark: '#0B0C10',
+            second: '#1f2833',
+            gold: '#fbbf24',
+            goldhover: '#f59e0b',
+            red: '#d97706',
+            gray: '#c5c6c7'
+          }
+        },
+        fontFamily: {
+          inter: ['Inter', 'sans-serif'],
+          outfit: ['Outfit', 'sans-serif'],
+        }
+      }
+    }
+  }
+</script>
+</head>
+<body class="bg-brand-dark text-white min-h-screen flex flex-col font-sans">
+<nav class="sticky top-0 z-[1000] bg-brand-dark/80 backdrop-blur-xl border-b border-white/10">
+<div class="flex justify-between items-center h-[70px] w-[90%] max-w-[1400px] mx-auto">
+<a class="font-outfit text-3xl font-extrabold text-brand-gold tracking-wide drop-shadow-[0_0_15px_rgba(251,191,36,0.8)] hover:drop-shadow-[0_0_25px_rgba(251,191,36,1)] transition-all" href="/">Yellow<span style="color: white; text-shadow: 0 0 10px rgba(255,255,255,0.8);">Umbrella</span></a>
+<div class="flex gap-7 items-center">
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/">Home</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/top_rated.html">Top Rated</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/celebrities.html">Top Celebrities</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group active text-brand-gold" href="/events.html">Awards</a>
+</div>
+<div class="flex gap-4 items-center">
+<a class="px-4 py-2 rounded-lg font-semibold text-[0.9rem] cursor-pointer transition bg-transparent border border-white/10 border border-brand-gold text-brand-gold hover:bg-brand-gold/10 hover:shadow-[0_0_15px_rgba(251,191,36,0.3)] guest-only" href="/login.html">Sign In</a>
+<a class="px-4 py-2 rounded-lg font-semibold text-[0.9rem] cursor-pointer transition bg-brand-gold border border-brand-gold text-brand-dark hover:bg-black/40 border border-white/10 hover:border-white hover:text-brand-dark guest-only" href="/login.html">Sign Up</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group auth-only auth-hidden display-username flex items-center h-full" href="/profile.html" style="font-weight: 700;"></a>
+<button class="px-4 py-2 rounded-lg font-semibold text-[0.9rem] cursor-pointer transition bg-transparent border border-white/10 border border-brand-gold text-brand-gold hover:bg-brand-gold/10 hover:shadow-[0_0_15px_rgba(251,191,36,0.3)] auth-only auth-hidden" id="logout-btn">Logout</button>
+</div>
+</div>
+</nav>
+
+<div class="border-b border-white/10 bg-black/40 pt-[60px] pb-[40px] text-center">
+    <h1 class="text-4xl md:text-5xl font-bold font-outfit mb-4">🏆 Award <span class="text-brand-gold">Ceremonies</span></h1>
+    <p class="text-brand-gray text-lg max-w-2xl mx-auto">Explore the most prestigious cinematic honors from around the globe.</p>
+</div>
+
+<main class="w-[90%] max-w-[1400px] mx-auto flex-1 py-10">
+    <div id="loading" class="text-center text-brand-gray text-xl">Loading award shows...</div>
+    <div id="awards-grid" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+    <div id="no-awards" class="hidden text-center text-brand-gray py-20 text-lg">No award ceremonies found in the database.</div>
+</main>
+
+<script src="/statics/app.js?v=4"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const grid = document.getElementById('awards-grid');
+        const loading = document.getElementById('loading');
+        const noAwards = document.getElementById('no-awards');
+        
+        try {
+            const res = await fetch('/awards/');
+            const awards = await res.json();
+            
+            loading.style.display = 'none';
+            
+            if (!awards || awards.length === 0) {
+                noAwards.classList.remove('hidden');
+                return;
+            }
+
+            grid.classList.remove('hidden');
+
+            awards.forEach(award => {
+                const card = document.createElement('div');
+                card.className = "group relative bg-[#111] rounded-2xl overflow-hidden border border-white/10 hover:border-brand-gold/50 cursor-pointer transition-all duration-300 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)]";
+                card.onclick = () => window.location.href = `/award.html?id=${award.id}`;
+                
+                card.innerHTML = `
+                    <div class="aspect-[16/9] relative overflow-hidden">
+                        <img src="${award.imageurl}" alt="${award.name}" class="w-full h-full object-cover transition duration-700 group-hover:scale-110 group-hover:rotate-1">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+                    </div>
+                    <div class="p-6 relative">
+                        <div class="text-brand-gold text-xs font-bold uppercase tracking-widest mb-2">Major Event</div>
+                        <h3 class="text-2xl font-bold group-hover:text-brand-gold transition-colors font-outfit">${award.name}</h3>
+                        <p class="text-brand-gray text-sm mt-3 line-clamp-2">The pinnacle of cinematic achievement. Explore winners and nominees across various categories.</p>
+                        <div class="mt-6 flex items-center justify-between text-sm">
+                            <div class="flex items-center gap-2 text-brand-gray">
+                                <span>🏆 Hall of Fame</span>
+                            </div>
+                            <span class="text-brand-gold font-bold flex items-center gap-1 group-hover:translate-x-1 transition-transform">Explore <span>→</span></span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+            
+        } catch (err) {
+            loading.innerHTML = `<div class="text-red-500">Failed to load awards: ${err.message}</div>`;
+        }
+    });
+</script>
+</body>
+</html>

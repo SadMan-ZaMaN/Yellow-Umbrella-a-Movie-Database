@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Yellow Umbrella - Video Game Details</title>
+<link href="/statics/style.css" rel="stylesheet"/>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: {
+            dark: '#0B0C10',
+            second: '#1f2833',
+            gold: '#fbbf24',
+            goldhover: '#f59e0b',
+            red: '#d97706',
+            gray: '#c5c6c7'
+          }
+        },
+        fontFamily: {
+          inter: ['Inter', 'sans-serif'],
+          outfit: ['Outfit', 'sans-serif'],
+        }
+      }
+    }
+  }
+</script>
+</head>
+<body class="bg-brand-dark text-white min-h-screen flex flex-col font-sans">
+<nav class="sticky top-0 z-[1000] bg-brand-dark/80 backdrop-blur-xl border-b border-white/10">
+<div class="flex justify-between items-center h-[70px] w-[90%] max-w-[1400px] mx-auto">
+<a class="font-outfit text-3xl font-extrabold text-brand-gold tracking-wide drop-shadow-[0_0_15px_rgba(251,191,36,0.8)] hover:drop-shadow-[0_0_25px_rgba(251,191,36,1)] transition-all" href="/">Yellow<span style="color: white; text-shadow: 0 0 10px rgba(255,255,255,0.8);">Umbrella</span></a>
+<div class="flex gap-7 items-center">
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/">Home</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/top_rated.html">Top Rated</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/celebrities.html">Top Celebrities</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/events.html">Awards</a>
+</div>
+<div class="flex gap-4 items-center">
+<a class="px-4 py-2 rounded-lg font-semibold text-[0.9rem] cursor-pointer transition bg-transparent border border-white/10 border border-brand-gold text-brand-gold hover:bg-brand-gold/10 hover:shadow-[0_0_15px_rgba(251,191,36,0.3)] guest-only" href="/login.html">Sign In</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group auth-only auth-hidden display-username flex items-center h-full" href="/profile.html" style="font-weight: 700;"></a>
+<button class="px-4 py-2 rounded-lg font-semibold text-[0.9rem] cursor-pointer transition bg-transparent border border-white/10 border border-brand-gold text-brand-gold hover:bg-brand-gold/10 hover:shadow-[0_0_15px_rgba(251,191,36,0.3)] auth-only auth-hidden" id="logout-btn">Logout</button>
+</div>
+</div>
+</nav>
+<main class="w-[90%] max-w-[1400px] mx-auto flex-1 py-10">
+<div class="text-center mt-[30px] text-brand-gray" id="loading-spinner">Loading Game Database...</div>
+<div class="text-red-500 text-center mt-[30px] hidden text-[1.2rem]" id="error-box"></div>
+<div id="game-content" class="hidden">
+<div class="flex flex-col md:flex-row gap-10 items-end mb-10">
+<img id="g-poster" src="" onerror="this.onerror=null;this.src='https://placehold.co/300x450/111/fff?text=No+Poster';" class="w-[300px] rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] border border-white/10"/>
+<div class="flex-1 w-full">
+<div id="g-genres" class="mb-2.5 text-brand-gold font-semibold uppercase text-xs tracking-widest"></div>
+<h1 id="g-title" class="text-5xl md:text-6xl leading-[1.1] mb-2.5 text-white"></h1>
+<div class="flex flex-wrap gap-5 text-brand-gray mb-[25px] items-center text-base">
+<span id="g-year"></span>
+<span>•</span>
+<span id="g-developer" class="text-white font-semibold"></span>
+<span>•</span>
+<span id="g-platform" class="text-white"></span>
+<div class="ml-auto flex gap-3">
+<button class="bg-transparent border border-[#fbbf24] text-[#fbbf24] py-2 px-4 rounded-lg font-semibold text-[0.9rem] hover:bg-[#fbbf24] hover:text-brand-dark hover:shadow-[0_0_15px_rgba(251,191,36,0.4)] transition auth-only auth-hidden" id="btn-favorite">★ Favorite</button>
+<button class="bg-transparent border border-brand-red text-brand-red py-2 px-4 rounded-lg font-semibold text-[0.9rem] hover:bg-brand-red hover:text-white hover:shadow-[0_0_15px_rgba(229,9,20,0.4)] transition auth-only auth-hidden" id="btn-interested">📌 Interested</button>
+<button class="bg-transparent border border-green-500 text-green-500 py-2 px-4 rounded-lg font-semibold text-[0.9rem] hover:bg-green-500 hover:text-white hover:shadow-[0_0_15px_rgba(34,197,94,0.4)] transition auth-only auth-hidden" id="btn-event" onclick="document.getElementById('event-modal').classList.remove('hidden')">📅 Watch Event</button>
+</div>
+</div>
+<div class="bg-black/40 backdrop-blur-xl border border-white/10 rounded-[20px] p-[30px] shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] inline-block">
+<span class="text-brand-gray">Community Average:</span>
+<h3 id="g-rating" class="text-[#fbbf24] text-[2rem] mt-1 font-bold"></h3>
+<div class="mt-3"><span class="text-brand-gray">Publisher:</span> <span id="g-publisher" class="font-semibold text-white"></span></div>
+</div>
+</div>
+</div>
+<hr class="border-t border-white/10 my-10"/>
+<div class="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-10">
+<!-- Left Col: Trailers -->
+<div>
+<h2 class="text-3xl font-bold mb-5">Trailers</h2>
+<div id="g-trailers" class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-5"></div>
+</div>
+<!-- Right Col: Reviews -->
+<div>
+<h2 class="text-3xl font-bold mb-5 relative inline-block after:absolute after:bottom-[-5px] after:left-0 after:w-1/2 after:h-1 after:bg-brand-red after:rounded">Community Reviews</h2>
+<div class="bg-black/40 backdrop-blur-xl border border-white/10 rounded-[20px] p-[30px] shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] mt-5 auth-only auth-hidden">
+<h4 class="text-brand-gold mb-2.5 font-semibold">Review this Game</h4>
+<div class="flex gap-2.5 mb-2.5">
+<input class="w-[100px] bg-black/20 border border-white/10 text-white py-3 px-4 rounded-lg font-sans text-base transition focus:outline-none focus:border-brand-gold focus:bg-black/40 focus:ring-2 focus:ring-brand-gold/20" id="review-rating" max="10" min="1" step="0.1" placeholder="1-10" type="number"/>
+</div>
+<textarea class="w-full bg-black/20 border border-white/10 text-white py-3 px-4 rounded-lg font-sans text-base transition focus:outline-none focus:border-brand-gold focus:bg-black/40 focus:ring-2 focus:ring-brand-gold/20 mb-2.5 resize-none inline-block align-top" id="review-text" placeholder="Is the gameplay good? Story engaging?" rows="3"></textarea>
+<button class="bg-brand-red text-white py-3 px-6 rounded-lg font-semibold text-base hover:bg-[currentColor] hover:shadow-[0_0_15px_rgba(229,9,20,0.4)] hover:-translate-y-0.5 transition inline-flex items-center justify-center gap-2 w-full" id="post-review-btn">Submit Review</button>
+</div>
+<div class="mt-[30px] flex flex-col gap-[15px]" id="reviews-feed"></div>
+</div>
+</div>
+</div>
+</main>
+
+<!-- Watch Event Modal -->
+<div id="event-modal" class="hidden fixed inset-0 z-[2000] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+<div class="bg-brand-dark border border-white/10 rounded-2xl p-8 w-full max-w-md shadow-[0_20px_60px_rgba(0,0,0,0.8)]">
+<h3 class="text-2xl font-bold text-brand-gold mb-5">📅 Schedule Watch Event</h3>
+<input id="evt-title" class="w-full mb-3 bg-black/40 border border-white/10 text-white py-3 px-4 rounded-lg focus:outline-none focus:border-brand-gold transition" placeholder="Event Title (e.g. Game Night!)"/>
+<input id="evt-time" type="datetime-local" class="w-full mb-3 bg-black/40 border border-white/10 text-white py-3 px-4 rounded-lg focus:outline-none focus:border-brand-gold transition"/>
+<input id="evt-platform" class="w-full mb-3 bg-black/40 border border-white/10 text-white py-3 px-4 rounded-lg focus:outline-none focus:border-brand-gold transition" placeholder="Platform (e.g. Discord, Twitch)"/>
+<textarea id="evt-desc" rows="2" class="w-full mb-3 bg-black/40 border border-white/10 text-white py-3 px-4 rounded-lg focus:outline-none focus:border-brand-gold transition resize-none" placeholder="Description (optional)"></textarea>
+<input id="evt-link" class="w-full mb-4 bg-black/40 border border-white/10 text-white py-3 px-4 rounded-lg focus:outline-none focus:border-brand-gold transition" placeholder="Stream/Invite Link (optional)"/>
+<div class="flex gap-3">
+<button id="evt-submit" class="flex-1 bg-brand-gold text-brand-dark py-3 rounded-lg font-bold hover:bg-brand-goldhover transition">Create Event</button>
+<button class="flex-1 bg-white/5 border border-white/10 text-brand-gray py-3 rounded-lg font-semibold hover:bg-white/10 transition" onclick="document.getElementById('event-modal').classList.add('hidden')">Cancel</button>
+</div>
+<div id="evt-status" class="mt-3 text-sm text-center hidden"></div>
+</div>
+</div>
+
+<script src="/statics/app.js?v=4"></script>
+<script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const params = new URLSearchParams(window.location.search);
+            const gameId = params.get('id') ? parseInt(params.get('id')) : 1001; 
+
+            try {
+                const res = await fetch(`/games/${gameId}`);
+                if (!res.ok) throw new Error("Backend route not found or ID invalid.");
+                const game = await res.json();
+                
+                if (game.error) throw new Error(game.error);
+
+                document.getElementById('loading-spinner').style.display = 'none';
+                document.getElementById('game-content').style.display = 'block';
+
+                document.title = `${game.title} - Yellow Umbrella`;
+                
+                document.getElementById('g-title').textContent = game.title;
+                document.getElementById('g-poster').src = (game.posterurl && game.posterurl.startsWith('/')) ? ('https://image.tmdb.org/t/p/w500' + game.posterurl) : (game.posterurl || 'https://placehold.co/300x450');
+                document.getElementById('g-year').textContent = game.releasedate ? game.releasedate.split('-')[0] : 'TBA';
+                document.getElementById('g-genres').textContent = (game.genres || []).join(' • ');
+                document.getElementById('g-developer').textContent = game.developer || 'Unknown Developer';
+                document.getElementById('g-platform').textContent = game.platform || '';
+                document.getElementById('g-publisher').textContent = game.publisher || 'Unknown';
+                document.getElementById('g-rating').textContent = game.avgrating ? `★ ${parseFloat(game.avgrating).toFixed(1)}/10` : 'Not yet rated';
+
+                // Render Trailers
+                const trailerDiv = document.getElementById('g-trailers');
+                if (game.trailers && game.trailers.length > 0) {
+                    game.trailers.forEach(t => {
+                        const a = document.createElement('a');
+                        a.className = 'bg-black/40 backdrop-blur-xl border border-white/10 rounded-[20px] p-[15px] shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] text-center no-underline text-white hover:-translate-y-1 transition';
+                        a.href = t.url;
+                        a.target = '_blank';
+                        a.innerHTML = `<span class="text-[2rem] block mb-[10px]">▶</span>${t.title}`;
+                        trailerDiv.appendChild(a);
+                    });
+                } else {
+                    trailerDiv.innerHTML = '<span class="text-[#555]">No trailers available.</span>';
+                }
+
+                // Reviews Block
+                const loadReviews = async () => {
+                    const reviewFeed = document.getElementById('reviews-feed');
+                    reviewFeed.innerHTML = 'Loading reviews...';
+                    try {
+                        const res = await fetch(`/reviews/${gameId}`);
+                        const reviews = await res.json();
+                        
+                        if (reviews.error || reviews.length === 0) {
+                            reviewFeed.innerHTML = '<div class="text-brand-gray italic">No reviews yet.</div>';
+                            return;
+                        }
+                        
+                        reviewFeed.innerHTML = reviews.map(rv => `
+                            <div class="bg-black/40 backdrop-blur-xl border border-white/10 rounded-[20px] p-[20px] shadow-[0_8px_32px_0_rgba(0,0,0,0.37)]">
+                                <div class="flex justify-between mb-2.5">
+                                    <strong class="text-brand-gold">${escapeHtml(rv.username)}</strong>
+                                    <span class="text-[#fbbf24] font-bold">★ ${rv.rating}/10</span>
+                                </div>
+                                <p class="text-brand-gray mb-2.5 text-[0.95rem]">${escapeHtml(rv.comment)}</p>
+                            </div>
+                        `).join('');
+                    } catch(err) {
+                        reviewFeed.innerHTML = 'Error loading reviews.';
+                    }
+                };
+                
+                await loadReviews();
+
+                // Post Review
+                const postBtn = document.getElementById('post-review-btn');
+                postBtn.addEventListener('click', async () => {
+                    const rating = document.getElementById('review-rating').value;
+                    const text = document.getElementById('review-text').value;
+                    const user = getUser();
+                    
+                    if (!user) return alert("Must be logged in.");
+                    
+                    try {
+                        await apiFetch(`/reviews/`, {
+                            method: 'POST',
+                            body: JSON.stringify({ mediaid: gameId, userid: user.userid, rating: parseFloat(rating), commenttext: text })
+                        });
+                        document.getElementById('review-rating').value = '';
+                        document.getElementById('review-text').value = '';
+                        await loadReviews();
+                    } catch (err) {
+                        alert(err.message);
+                    }
+                });
+
+                // Favorite Button
+                const favBtn = document.getElementById('btn-favorite');
+                if (favBtn) {
+                    favBtn.addEventListener('click', async () => {
+                        const user = getUser();
+                        if (!user) return alert("Must log in first");
+                        favBtn.textContent = '★...';
+                        try {
+                            await apiFetch(`/lists/${user.userid}/Favorites/${gameId}`, { method: 'POST' });
+                            favBtn.textContent = '★ Favorited';
+                            favBtn.style.color = '#0B0C10';
+                            favBtn.style.backgroundColor = '#fbbf24';
+                        } catch(err) {
+                            alert("Failed to favorite: " + err.message);
+                            favBtn.textContent = '★ Favorite';
+                        }
+                    });
+                }
+
+                // Interested Button
+                const intBtn = document.getElementById('btn-interested');
+                if (intBtn) {
+                    intBtn.addEventListener('click', async () => {
+                        const user = getUser();
+                        if (!user) return alert("Must log in first");
+                        intBtn.textContent = '📌...';
+                        try {
+                            await apiFetch(`/lists/${user.userid}/Interested/${gameId}`, { method: 'POST' });
+                            intBtn.textContent = '📌 Marked';
+                            intBtn.style.color = '#fff';
+                            intBtn.style.backgroundColor = '#d97706';
+                        } catch(err) {
+                            alert("Failed: " + err.message);
+                            intBtn.textContent = '📌 Interested';
+                        }
+                    });
+                }
+
+                // Watch Event Creation
+                document.getElementById('evt-submit').addEventListener('click', async () => {
+                    const user = getUser();
+                    if (!user) return alert("Must be logged in.");
+                    const title = document.getElementById('evt-title').value;
+                    const time = document.getElementById('evt-time').value;
+                    const platform = document.getElementById('evt-platform').value;
+                    const desc = document.getElementById('evt-desc').value;
+                    const link = document.getElementById('evt-link').value;
+                    if (!title || !time) return alert("Please fill in event title and time.");
+                    const statusEl = document.getElementById('evt-status');
+                    statusEl.classList.remove('hidden');
+                    statusEl.textContent = 'Creating event...';
+                    statusEl.className = 'mt-3 text-sm text-center text-brand-gray';
+                    try {
+                        await apiFetch('/events/', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                host_userid: user.userid,
+                                mediaid: gameId,
+                                title: title,
+                                description: desc,
+                                platform: platform,
+                                event_time: time,
+                                stream_link: link,
+                                ispublic: true
+                            })
+                        });
+                        statusEl.textContent = '✅ Event created successfully!';
+                        statusEl.className = 'mt-3 text-sm text-center text-green-400';
+                        setTimeout(() => { document.getElementById('event-modal').classList.add('hidden'); }, 1500);
+                    } catch(err) {
+                        statusEl.textContent = '❌ ' + err.message;
+                        statusEl.className = 'mt-3 text-sm text-center text-red-400';
+                    }
+                });
+
+            } catch (err) {
+                document.getElementById('loading-spinner').style.display = 'none';
+                const el = document.getElementById('error-box');
+                el.style.display = 'block';
+                el.textContent = err.message || "Failed to load Video Game entry.";
+            }
+        });
+    </script>
+</body>
+</html>

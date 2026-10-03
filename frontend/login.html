@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Yellow Umbrella - Sign In</title>
+<link href="/statics/style.css" rel="stylesheet"/>
+
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: {
+            dark: '#0B0C10',
+            second: '#1f2833',
+            gold: '#fbbf24',
+            goldhover: '#f59e0b',
+            red: '#d97706',
+            gray: '#c5c6c7'
+          }
+        },
+        fontFamily: {
+          inter: ['Inter', 'sans-serif'],
+          outfit: ['Outfit', 'sans-serif'],
+        }
+      }
+    }
+  }
+</script>
+</head>
+<body class="bg-brand-dark text-white min-h-screen flex flex-col items-center justify-center font-sans relative">
+<!-- Dynamic Background Gradient -->
+<div class="absolute inset-0 bg-gradient-to-br from-brand-red/10 via-brand-dark to-brand-gold/5 z-0 pointer-events-none"></div>
+
+<!-- Minimal Nav -->
+<a class="font-outfit text-3xl font-extrabold text-brand-gold tracking-wide absolute top-[30px] left-[30px] z-20 drop-shadow-[0_0_15px_rgba(251,191,36,0.8)] hover:scale-105 transition-transform" href="/">Yellow<span style="color: white; text-shadow: 0 0 10px rgba(255,255,255,0.8);">Umbrella</span></a>
+
+<!-- Auth Container -->
+<div class="z-10 bg-black/60 backdrop-blur-2xl border border-white/10 border-t-white/20 rounded-[24px] p-[40px] shadow-[0_20px_50px_0_rgba(0,0,0,0.7)] w-full max-w-[480px] text-left transform transition-all duration-500 hover:shadow-[0_20px_60px_0_rgba(251,191,36,0.15)] mx-4">
+<!-- Toggle Tabs -->
+<div class="flex border-b border-white/10 mb-[30px]">
+<div class="tab active flex-1 text-center p-[15px] cursor-pointer text-brand-gold border-b-[2px] border-brand-gold font-semibold transition" id="tab-login">Sign In</div>
+<div class="tab flex-1 text-center p-[15px] cursor-pointer text-brand-gray border-b-[2px] border-transparent font-semibold transition" id="tab-register">Register</div>
+</div>
+<!-- System Message -->
+<div id="auth-msg" class="mb-[15px] text-center"></div>
+<!-- Login Form -->
+<form id="form-login">
+<h2 class="mb-5 text-2xl font-bold">Welcome Back</h2>
+<div class="mb-5">
+<label class="block text-brand-gray text-[0.85rem] mb-1.5 font-semibold uppercase tracking-wider">Username</label>
+<input class="w-full bg-black/20 border border-white/10 text-white py-3 px-4 rounded-lg font-sans text-base transition focus:outline-none focus:border-brand-gold focus:bg-black/40 focus:ring-2 focus:ring-brand-gold/20" id="login-username" required="" type="text"/>
+</div>
+<div class="mb-5">
+<label class="block text-brand-gray text-[0.85rem] mb-1.5 font-semibold uppercase tracking-wider">Password</label>
+<input class="w-full bg-black/20 border border-white/10 text-white py-3 px-4 rounded-lg font-sans text-base transition focus:outline-none focus:border-brand-gold focus:bg-black/40 focus:ring-2 focus:ring-brand-gold/20" id="login-password" required="" type="password"/>
+</div>
+<div class="flex justify-end mb-4">
+<button type="button" id="forgot-link" class="text-brand-gold text-sm hover:text-brand-goldhover transition hover:underline">Forgot Password?</button>
+</div>
+<button class="bg-brand-red text-white py-3 px-6 rounded-lg font-semibold text-base hover:bg-[currentColor] hover:shadow-[0_0_15px_rgba(229,9,20,0.4)] hover:-translate-y-0.5 transition flex items-center justify-center gap-2 w-full mt-2.5" type="submit">Login</button>
+</form>
+<!-- Forgot Password Inline Form (Hidden by default) -->
+<form id="form-forgot" class="hidden">
+<h2 class="mb-3 text-2xl font-bold">Reset Password</h2>
+<p class="text-brand-gray text-sm mb-5">Enter your email address and we'll send you a link to reset your password.</p>
+<div class="mb-5">
+<label class="block text-brand-gray text-[0.85rem] mb-1.5 font-semibold uppercase tracking-wider">Email Address</label>
+<input class="w-full bg-black/20 border border-white/10 text-white py-3 px-4 rounded-lg font-sans text-base transition focus:outline-none focus:border-brand-gold focus:bg-black/40 focus:ring-2 focus:ring-brand-gold/20" id="forgot-email" required="" type="email" placeholder="name@example.com"/>
+</div>
+<button class="bg-brand-gold text-brand-dark py-3 px-6 rounded-lg font-semibold text-base hover:bg-brand-goldhover hover:shadow-[0_0_15px_rgba(251,191,36,0.4)] hover:-translate-y-0.5 transition flex items-center justify-center gap-2 w-full" type="submit">Send Reset Link</button>
+<button type="button" id="back-to-login" class="w-full text-center text-brand-gray text-sm mt-4 hover:text-white transition hover:underline">← Back to Sign In</button>
+</form>
+<!-- Register Form (Hidden) -->
+<form id="form-register" class="hidden">
+<h2 class="mb-5 text-2xl font-bold">Create Account</h2>
+<div class="mb-5">
+<label class="block text-brand-gray text-[0.85rem] mb-1.5 font-semibold uppercase tracking-wider">Username</label>
+<input class="w-full bg-black/20 border border-white/10 text-white py-3 px-4 rounded-lg font-sans text-base transition focus:outline-none focus:border-brand-gold focus:bg-black/40 focus:ring-2 focus:ring-brand-gold/20" id="reg-username" required="" type="text"/>
+</div>
+<div class="mb-5">
+<label class="block text-brand-gray text-[0.85rem] mb-1.5 font-semibold uppercase tracking-wider">Email Address</label>
+<input class="w-full bg-black/20 border border-white/10 text-white py-3 px-4 rounded-lg font-sans text-base transition focus:outline-none focus:border-brand-gold focus:bg-black/40 focus:ring-2 focus:ring-brand-gold/20" id="reg-email" required="" type="email"/>
+</div>
+<div class="mb-5">
+<label class="block text-brand-gray text-[0.85rem] mb-1.5 font-semibold uppercase tracking-wider">Password (Min 4. Chars)</label>
+<input class="w-full bg-black/20 border border-white/10 text-white py-3 px-4 rounded-lg font-sans text-base transition focus:outline-none focus:border-brand-gold focus:bg-black/40 focus:ring-2 focus:ring-brand-gold/20" id="reg-password" minlength="4" required="" type="password"/>
+</div>
+
+<button class="bg-brand-gold text-brand-dark py-3 px-6 rounded-lg font-semibold text-base hover:bg-black/40 border border-white/10 hover:shadow-[0_0_15px_rgba(251,191,36,0.4)] hover:-translate-y-0.5 transition flex items-center justify-center gap-2 w-full mt-2.5" type="submit">Join Yellow Umbrella</button>
+</form>
+</div>
+
+<!-- Browse as Guest -->
+<div class="z-10 text-center mt-5">
+    <a href="/" class="text-brand-gray text-sm hover:text-white transition group flex items-center justify-center gap-2">
+        <span class="text-lg">👁</span>
+        <span class="group-hover:underline">Browse as Guest →</span>
+    </a>
+    <p class="text-[0.75rem] text-white/20 mt-1.5">You can explore movies, series & more without an account.</p>
+</div>
+
+<!-- Scripts -->
+<script src="/statics/app.js?v=4"></script>
+<script>
+        // Redirect if already logged in
+        if (isLoggedIn()) {
+            window.location.href = '/profile.html';
+        }
+
+        const tabLogin = document.getElementById('tab-login');
+        const tabRegister = document.getElementById('tab-register');
+        const formLogin = document.getElementById('form-login');
+        const formRegister = document.getElementById('form-register');
+        const authMsg = document.getElementById('auth-msg');
+
+        // Tab Switching Logic
+        tabLogin.onclick = () => {
+            tabLogin.className = 'tab active flex-1 text-center p-[15px] cursor-pointer text-brand-gold border-b-[2px] border-brand-gold font-semibold transition';
+            tabRegister.className = 'tab flex-1 text-center p-[15px] cursor-pointer text-brand-gray border-b-[2px] border-transparent font-semibold transition';
+            formLogin.classList.remove('hidden');
+            formRegister.classList.add('hidden');
+            authMsg.innerHTML = '';
+        };
+
+        tabRegister.onclick = () => {
+            tabRegister.className = 'tab active flex-1 text-center p-[15px] cursor-pointer text-brand-gold border-b-[2px] border-brand-gold font-semibold transition';
+            tabLogin.className = 'tab flex-1 text-center p-[15px] cursor-pointer text-brand-gray border-b-[2px] border-transparent font-semibold transition';
+            formRegister.classList.remove('hidden');
+            formLogin.classList.add('hidden');
+            authMsg.innerHTML = '';
+        };
+
+        function showMessage(msg, isError = true) {
+            authMsg.innerHTML = `<div class="${isError ? 'text-red-500 font-semibold bg-red-500/10 p-2.5 rounded border border-red-500/20' : 'text-green-500 font-semibold bg-green-500/10 p-2.5 rounded border border-green-500/20'}">${msg}</div>`;
+        }
+
+        // Handle Login
+        formLogin.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                username: document.getElementById('login-username').value.trim(),
+                password: document.getElementById('login-password').value
+            };
+
+            const btn = e.target.querySelector('button');
+            const originalText = btn.textContent;
+            btn.textContent = 'Loading...';
+
+            try {
+                // Since apiFetch injects tokens, but we don't need one here, standard fetch is fine, but apiFetch works too
+                const response = await fetch('/users/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    showMessage(data.error);
+                } else if (data.access_token) {
+                    // Success — store JWT
+                    localStorage.setItem('access_token', data.access_token);
+                    localStorage.setItem('user', JSON.stringify({ userid: data.userid, username: data.username, role: data.role }));
+                    // Redirect back to page user was trying to visit, or profile
+                    const params = new URLSearchParams(window.location.search);
+                    const next = params.get('next');
+                    window.location.href = (next && next.startsWith('/')) ? next : '/profile.html';
+                }
+            } catch (err) {
+                showMessage("A network error occurred.");
+            } finally {
+                btn.textContent = originalText;
+            }
+        });
+
+        // Handle Registration
+        formRegister.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                username: document.getElementById('reg-username').value,
+                email: document.getElementById('reg-email').value,
+                password: document.getElementById('reg-password').value
+            };
+
+            try {
+                const response = await fetch('/users/register', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    showMessage(data.error);
+                } else if (data.userid) {
+                    showMessage("Registration Successful! Proceed to Sign In.", false);
+                    localStorage.setItem('welcome_state', 'aboard');
+                    setTimeout(() => tabLogin.click(), 2000);
+                }
+            } catch (err) {
+                showMessage("A network error occurred.");
+            }
+        });
+
+        // ── Forgot Password Logic ──────────────────────────────────
+        const formForgot = document.getElementById('form-forgot');
+        const forgotLink = document.getElementById('forgot-link');
+        const backToLogin = document.getElementById('back-to-login');
+
+        forgotLink.onclick = () => {
+            formLogin.classList.add('hidden');
+            formForgot.classList.remove('hidden');
+            document.querySelector('.flex.border-b').classList.add('hidden');
+            authMsg.innerHTML = '';
+        };
+
+        backToLogin.onclick = () => {
+            formForgot.classList.add('hidden');
+            formLogin.classList.remove('hidden');
+            document.querySelector('.flex.border-b').classList.remove('hidden');
+            authMsg.innerHTML = '';
+        };
+
+        formForgot.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('forgot-email').value;
+            const btn = formForgot.querySelector('button[type="submit"]');
+            const originalText = btn.textContent;
+            btn.textContent = 'Sending...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/users/forgot-password', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ email })
+                });
+                const data = await response.json();
+                
+                if (data.error) {
+                    showMessage(data.error);
+                } else {
+                    showMessage(data.status || 'If an account with that email exists, a reset link has been sent.', false);
+                }
+            } catch (err) {
+                showMessage('A network error occurred.');
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Yellow Umbrella - Top Rated</title>
+    <link href="/statics/style.css" rel="stylesheet"/>
+    
+    
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: {
+            dark: '#0B0C10',
+            second: '#1f2833',
+            gold: '#fbbf24',
+            goldhover: '#f59e0b',
+            red: '#d97706',
+            gray: '#c5c6c7'
+          }
+        },
+        fontFamily: {
+          inter: ['Inter', 'sans-serif'],
+          outfit: ['Outfit', 'sans-serif'],
+        }
+      }
+    }
+  }
+</script>
+</head>
+<body class="bg-brand-dark text-white min-h-screen flex flex-col font-sans">
+<!-- Navigation -->
+<nav class="sticky top-0 z-[1000] bg-brand-dark/80 backdrop-blur-xl border-b border-white/10">
+<div class="flex justify-between items-center h-[70px] w-[90%] max-w-[1400px] mx-auto">
+<a class="font-outfit text-3xl font-extrabold text-brand-gold tracking-wide drop-shadow-[0_0_15px_rgba(251,191,36,0.8)] hover:drop-shadow-[0_0_25px_rgba(251,191,36,1)] transition-all" href="/">Yellow<span style="color: white; text-shadow: 0 0 10px rgba(255,255,255,0.8);">Umbrella</span></a>
+<div class="flex gap-7 items-center">
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/">Home</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group active text-brand-gold" href="/top_rated.html">Top Rated</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/celebrities.html">Top Celebrities</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group " href="/events.html">Awards</a>
+</div>
+<div class="flex gap-4 items-center">
+<a class="px-4 py-2 rounded-lg font-semibold text-[0.9rem] cursor-pointer transition bg-transparent border border-white/10 border border-brand-gold text-brand-gold hover:bg-brand-gold/10 hover:shadow-[0_0_15px_rgba(251,191,36,0.3)] guest-only" href="/login.html">Sign In</a>
+<a class="px-4 py-2 rounded-lg font-semibold text-[0.9rem] cursor-pointer transition bg-brand-gold border border-brand-gold text-brand-dark hover:bg-black/40 border border-white/10 hover:border-white hover:text-brand-dark guest-only" href="/login.html">Sign Up</a>
+<a class="text-brand-gray font-medium text-[0.95rem] tracking-wide relative hover:text-white transition group auth-only auth-hidden display-username flex items-center h-full" href="/profile.html" style="font-weight: 700;"></a>
+<button class="px-4 py-2 rounded-lg font-semibold text-[0.9rem] cursor-pointer transition bg-transparent border border-white/10 border border-brand-gold text-brand-gold hover:bg-brand-gold/10 hover:shadow-[0_0_15px_rgba(251,191,36,0.3)] auth-only auth-hidden" id="logout-btn">Logout</button>
+</div>
+</div>
+</nav>
+
+<div class="border-b border-white/10 bg-black/40 pt-[60px] pb-[40px] text-center">
+    <h1 class="text-4xl md:text-5xl font-bold font-outfit mb-4">Top Rated <span class="text-brand-gold">Media</span></h1>
+    <p class="text-brand-gray text-lg max-w-2xl mx-auto">Explore highest rated top 20 rankings.</p>
+</div>
+
+<main class="w-[90%] max-w-[1400px] mx-auto flex-1 py-10 flex flex-col gap-12">
+    <!-- Movies Row -->
+    <div class="w-full">
+        <h2 class="text-3xl font-bold font-outfit text-white mb-6 border-b border-brand-gold/50 pb-2 relative inline-block after:absolute after:w-2/5 after:h-1 after:-bottom-0.5 after:left-0 after:bg-brand-red">Top Rated Movies</h2>
+        <div id="col-movie" class="flex overflow-x-auto gap-6 pb-6 snap-x">
+            <span class="text-brand-gray">Loading...</span>
+        </div>
+    </div>
+    
+    <!-- Series Row -->
+    <div class="w-full">
+        <h2 class="text-3xl font-bold font-outfit text-white mb-6 border-b border-brand-gold/50 pb-2 relative inline-block after:absolute after:w-2/5 after:h-1 after:-bottom-0.5 after:left-0 after:bg-brand-red">Top Rated Series</h2>
+        <div id="col-series" class="flex overflow-x-auto gap-6 pb-6 snap-x">
+             <span class="text-brand-gray">Loading...</span>
+        </div>
+    </div>
+    
+    <!-- Anime Row -->
+    <div class="w-full">
+        <h2 class="text-3xl font-bold font-outfit text-white mb-6 border-b border-brand-gold/50 pb-2 relative inline-block after:absolute after:w-2/5 after:h-1 after:-bottom-0.5 after:left-0 after:bg-brand-red">Top Rated Anime</h2>
+        <div id="col-anime" class="flex overflow-x-auto gap-6 pb-6 snap-x">
+             <span class="text-brand-gray">Loading...</span>
+        </div>
+    </div>
+
+    <!-- Games Row -->
+    <div class="w-full">
+        <h2 class="text-3xl font-bold font-outfit text-white mb-6 border-b border-brand-gold/50 pb-2 relative inline-block after:absolute after:w-2/5 after:h-1 after:-bottom-0.5 after:left-0 after:bg-brand-red">Top Rated Games</h2>
+        <div id="col-game" class="flex overflow-x-auto gap-6 pb-6 snap-x">
+             <span class="text-brand-gray">Loading...</span>
+        </div>
+    </div>
+</main>
+
+<style>
+/* Hide scrollbar for a cleaner Netflix style row view */
+.overflow-x-auto::-webkit-scrollbar {
+    display: none;
+}
+.overflow-x-auto {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+</style>
+
+<script src="/statics/app.js?v=4"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const createCard = (item, index, type) => {
+            const card = document.createElement('div');
+            // Fixed width for horizontal scrolling carousel feel
+            card.className = "flex-none w-[180px] md:w-[220px] snap-start relative rounded-xl overflow-hidden cursor-pointer transition bg-[#111] group";
+            card.onclick = () => window.location.href = `/${type}.html?id=${item.id || item.mediaid}`;
+
+            const fallbackPoster = 'https://placehold.co/300x450/111/fff?text=NR';
+            const pUrl = (item.posterurl && item.posterurl !== 'None') ? item.posterurl : fallbackPoster;
+            const ratingStr = item.avgrating ? item.avgrating.toFixed(1) : 'NR';
+
+            card.innerHTML = `
+                <div class="aspect-[2/3] w-full relative">
+                    <img src="${pUrl}" alt="${item.title}" class="w-full h-full object-cover transition duration-500 group-hover:scale-105">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-4 opacity-100 transition duration-300">
+                        <div class="absolute top-2.5 right-2.5 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-lg font-bold text-[0.8rem] text-brand-gold flex items-center gap-1">★ ${ratingStr}</div>
+                        <div class="text-[1.3rem] font-black text-brand-gold opacity-50 mb-1 absolute top-2 left-2">#${index + 1}</div>
+                        <div class="text-md font-semibold mb-1 line-clamp-2 leading-tight">${item.title}</div>
+                    </div>
+                </div>
+            `;
+            return card;
+        };
+
+        const fetchAndRender = async (endpoint, colId, type) => {
+            const container = document.getElementById(colId);
+            try {
+                const res = await fetch(endpoint);
+                let data = await res.json();
+                
+                if (data.error || !Array.isArray(data)) throw new Error("Failed");
+
+                // Sort by rating desc
+                data.sort((a,b) => (b.avgrating || 0) - (a.avgrating || 0));
+                
+                // Top 20
+                data = data.slice(0, 20);
+
+                container.innerHTML = '';
+                if (data.length === 0) {
+                    container.innerHTML = '<span class="text-brand-gray">No data available.</span>';
+                    return;
+                }
+
+                data.forEach((item, index) => {
+                    container.appendChild(createCard(item, index, type));
+                });
+
+            } catch (e) {
+                container.innerHTML = '<span class="text-brand-red">Error loading list.</span>';
+            }
+        };
+
+        fetchAndRender('/movies/', 'col-movie', 'movie');
+        fetchAndRender('/series/', 'col-series', 'series');
+        fetchAndRender('/anime/', 'col-anime', 'anime');
+        fetchAndRender('/games/', 'col-game', 'game');
+    });
+</script>
+</body>
+</html>
