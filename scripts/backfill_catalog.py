@@ -1,7 +1,8 @@
 """
 Matches every title already in the database to its TMDB / RAWG entry and
 refreshes it: external id, poster, backdrop, overview, rating, vote count and
-popularity, plus cast / trailers / genres if it has none.
+popularity. It also re-links each title's cast, which gives older person rows
+their photo and TMDB id, and adds trailers / genres where they're missing.
 
 Titles imported before those columns existed have none of this, which is why
 ratings looked random (RAWG's out-of-5 next to TMDB's out-of-10) and why
@@ -13,7 +14,7 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 
 from database import get_db
-from services.importer import (fill_missing_details, game_fields, movie_fields, rawg_get,
+from services.importer import (game_fields, movie_fields, rawg_get, refresh_details,
                                save_media, tmdb_get, tv_fields)
 
 
@@ -65,7 +66,7 @@ def refresh(row):
         try:
             save_media(conn, mediaid, fields)
             if details:
-                fill_missing_details(conn, mediaid, kind, details)
+                refresh_details(conn, mediaid, kind, details)
             conn.run("COMMIT")
         except Exception as e:
             conn.run("ROLLBACK")

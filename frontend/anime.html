@@ -112,29 +112,7 @@
                 document.getElementById('a-rating').textContent = anime.avgrating ? `★ ${parseFloat(anime.avgrating).toFixed(1)}/10` : 'Not yet rated';
 
                 
-                // Render Cast
-                const castDiv = document.getElementById('a-cast');
-                if (anime.cast && anime.cast.length > 0) {
-                    anime.cast.forEach(actor => {
-                        const pill = document.createElement('div');
-                        pill.className = "bg-black/40 border border-white/10 px-4 py-2 rounded-full flex items-center gap-3 hover:bg-white/5 transition duration-200";
-                        let photoUrl = actor.photourl;
-                        if (photoUrl && photoUrl.startsWith('/')) {
-                            photoUrl = 'https://image.tmdb.org/t/p/w500' + photoUrl;
-                        } else if (!photoUrl || photoUrl === 'None') {
-                            photoUrl = 'https://placehold.co/60x60/111/fff?text=Photo';
-                        }
-                        pill.innerHTML = `
-                            <img src="${photoUrl}" onerror="this.onerror=null;this.src='https://placehold.co/60x60/111/fff?text=?';" class="w-12 h-12 rounded-full object-cover shadow-[0_0_10px_rgba(251,191,36,0.2)] border border-brand-gold/30">
-                            <div class="flex flex-col">
-                                <strong class="text-white text-sm leading-tight">${actor.name}</strong>
-                                <span class="text-brand-gray text-xs mt-1">as <span class="italic text-brand-gold/80">${actor.role}</span></span>
-                            </div>`;
-                        castDiv.appendChild(pill);
-                    });
-                } else {
-                    castDiv.innerHTML = '<span class="text-[#555]">No cast details found.</span>';
-                }
+                renderCast(document.getElementById('a-cast'), anime.cast);
 
                 // Render Trailers
                 const trailerDiv = document.getElementById('a-trailers');

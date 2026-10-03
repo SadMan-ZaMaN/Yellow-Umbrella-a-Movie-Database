@@ -7,11 +7,15 @@ opens it (see /open in routes/discover.py) or a script imports it, so the
 database doesn't fill up with whatever happened to match a half-typed query.
 """
 import os
+import re
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 import requests
 from dotenv import load_dotenv
+
+from database import get_db
 
 load_dotenv()
 
@@ -145,6 +149,10 @@ def ensure_person(conn, tmdb_person):
     if tmdb_id:
         rows = conn.run("SELECT personid FROM person WHERE tmdb_id=:id;", id=tmdb_id)
         if rows:
+            if photourl:
+                conn.run("""UPDATE person SET photourl = :u
+                            WHERE personid = :id AND (photourl IS NULL OR photourl IN ('', 'None'));""",
+                         u=photourl, id=rows[0][0])
             return rows[0][0]
 
     rows = conn.run("SELECT personid FROM person WHERE name=:n AND tmdb_id IS NULL ORDER BY personid LIMIT 1;", n=name)
@@ -396,6 +404,16 @@ def _save_game_trailers(conn, mediaid, rawg_id):
 
 # ── People ───────────────────────────────────────────────────
 
+# Opening someone's page pulls in this many of their best-known titles, so
+# their filmography isn't just whatever happened to be imported already.
+KNOWN_FOR_LIMIT = 15
+# news, reality, soap and talk shows - mostly guest appearances
+TALK_SHOW_GENRES = {10763, 10764, 10766, 10767}
+
+_syncing = set()
+_syncing_lock = threading.Lock()
+
+
 def import_person(conn, tmdb_id):
     rows = conn.run("SELECT personid FROM person WHERE tmdb_id=:id;", id=tmdb_id)
     if rows:
@@ -420,18 +438,130 @@ def import_person(conn, tmdb_id):
     return _atomic(conn, store)
 
 
+def is_syncing(personid):
+    with _syncing_lock:
+        return personid in _syncing
+
+
+def _known_for(credits):
+    """[(credit, "cast" | "director")] someone is best known for, most-voted first.
+    `credits` is TMDB's combined_credits for a person."""
+    picks = []
+    for c in credits.get("cast", []):
+        if re.search(r"\b(self|himself|herself|themselves)\b", c.get("character") or "", re.I):
+            continue
+        if TALK_SHOW_GENRES & set(c.get("genre_ids", [])):
+            continue
+        if c.get("media_type") == "tv" and (c.get("episode_count") or 0) < 3:
+            continue    # a guest spot, not a role they're known for
+        picks.append((c, "cast"))
+    for c in credits.get("crew", []):
+        if c.get("job") in ("Director", "Creator"):
+            picks.append((c, "director"))
+
+    picks = [(c, role) for c, role in picks
+             if c.get("media_type") in ("movie", "tv") and (c.get("vote_count") or 0) >= 50]
+    picks.sort(key=lambda p: p[0].get("vote_count") or 0, reverse=True)
+    chosen, seen = [], set()
+    for c, role in picks:
+        key = (c["media_type"], c["id"], role)
+        if key not in seen:
+            seen.add(key)
+            chosen.append((c, role))
+    return chosen[:KNOWN_FOR_LIMIT]
+
+
+def _link_credit(personid, credit, role):
+    """Import one title if we don't have it, and make sure this person is on it."""
+    conn = get_db()
+    try:
+        for attempt in range(3):
+            try:
+                if credit["media_type"] == "movie":
+                    mediaid = import_movie(conn, credit["id"])
+                else:
+                    mediaid = import_tv(conn, credit["id"])
+                break
+            except Exception as e:
+                # usually two imports racing to create the same genre/actor
+                if attempt == 2:
+                    print(f"[sync] skipped {credit['media_type']} {credit['id']}: {e}")
+                    return
+        # a title's own import only keeps its top-billed cast, so attach this
+        # person explicitly in case they had a smaller part
+        if role == "cast":
+            order = credit.get("order")
+            conn.run("INSERT INTO actor (actorid) VALUES (:id) ON CONFLICT DO NOTHING;", id=personid)
+            conn.run("""INSERT INTO cast_member (mediaid, actorid, rolename, billingorder)
+                        VALUES (:m, :a, :r, :b) ON CONFLICT DO NOTHING;""",
+                     m=mediaid, a=personid, r=credit.get("character") or "",
+                     b=order + 1 if order is not None else None)
+        else:
+            conn.run("INSERT INTO director (directorid) VALUES (:id) ON CONFLICT DO NOTHING;", id=personid)
+            conn.run("INSERT INTO media_director (mediaid, directorid) VALUES (:m, :d) ON CONFLICT DO NOTHING;",
+                     m=mediaid, d=personid)
+    finally:
+        conn.close()
+
+
+def _match_person(conn, personid):
+    """TMDB id for an older person row that was saved by name only."""
+    name = conn.run("SELECT name FROM person WHERE personid=:id;", id=personid)[0][0]
+    results = tmdb_get("search/person", {"query": name}).get("results", [])
+    same = [r for r in results if (r.get("name") or "").lower() == name.lower()]
+    if not same:
+        return None
+    best = max(same, key=lambda r: r.get("popularity") or 0)
+    if conn.run("SELECT 1 FROM person WHERE tmdb_id=:t;", t=best["id"]):
+        return None     # another row is already this person
+    conn.run("UPDATE person SET tmdb_id=:t WHERE personid=:id;", t=best["id"], id=personid)
+    return best["id"]
+
+
+def sync_person(personid):
+    """Fill in someone's bio and pull their best-known titles into the
+    database. Uses its own connections, so it can run in the background."""
+    with _syncing_lock:
+        if personid in _syncing:
+            return
+        _syncing.add(personid)
+    conn = get_db()
+    try:
+        rows = conn.run("SELECT tmdb_id FROM person WHERE personid=:id;", id=personid)
+        if not rows:
+            return
+        tmdb_id = rows[0][0] or _match_person(conn, personid)
+        if tmdb_id:
+            d = tmdb_get(f"person/{tmdb_id}", {"append_to_response": "combined_credits"})
+            conn.run("""UPDATE person SET bio = COALESCE(:b, bio), birthdate = COALESCE(:bd, birthdate),
+                            photourl = COALESCE(:p, photourl)
+                        WHERE personid = :id;""",
+                     b=d.get("biography") or None, bd=d.get("birthday") or None,
+                     p=tmdb_image(d.get("profile_path")), id=personid)
+            credits = _known_for(d.get("combined_credits", {}))
+            with ThreadPoolExecutor(max_workers=4) as pool:
+                list(pool.map(lambda c: _link_credit(personid, *c), credits))
+            print(f"[sync] {d.get('name')}: {len(credits)} titles")
+        # mark it done even if TMDB had nothing, so we don't ask on every visit
+        conn.run("UPDATE person SET credits_synced_at = now() WHERE personid=:id;", id=personid)
+    finally:
+        conn.close()
+        with _syncing_lock:
+            _syncing.discard(personid)
+
+
 # ── Topping up older rows ────────────────────────────────────
 
-def fill_missing_details(conn, mediaid, kind, d):
-    """Add genres / cast / trailers to a row that has none yet.
-    `d` is a TMDB movie or tv response fetched with credits,videos appended."""
+def refresh_details(conn, mediaid, kind, d):
+    """Add genres / trailers to a row that has none yet, and re-link its cast.
+    Re-linking also gives older person rows (saved by name only) their TMDB
+    id and photo. `d` is a TMDB movie or tv response with credits,videos."""
     has = lambda table: conn.run(f"SELECT 1 FROM {table} WHERE mediaid=:m LIMIT 1;", m=mediaid)
     if not has("media_genre"):
         _set_genres(conn, mediaid, d.get("genres", []))
-    if not has("cast_member"):
-        crew = d.get("credits", {}).get("crew", [])
-        directors = (d.get("created_by") if kind == "tv" else None) or \
-            [c for c in crew if c.get("job") == "Director"][:2]
-        _set_credits(conn, mediaid, d.get("credits", {}).get("cast", []), directors)
+    crew = d.get("credits", {}).get("crew", [])
+    directors = (d.get("created_by") if kind == "tv" else None) or \
+        [c for c in crew if c.get("job") == "Director"][:2]
+    _set_credits(conn, mediaid, d.get("credits", {}).get("cast", []), directors)
     if not has("trailer"):
         _set_trailers(conn, mediaid, d.get("videos", {}).get("results", []))

@@ -82,10 +82,10 @@ def get_anime_detail(anime_id: int):
         anime["genres"] = [g[0] for g in genres]
 
         cast = conn.run(
-            """SELECT p.name, cm.rolename, p.photourl FROM cast_member cm
+            """SELECT p.name, cm.rolename, p.photourl, p.personid FROM cast_member cm
                JOIN person p ON cm.actorid=p.personid
-               WHERE cm.mediaid=:id ORDER BY cm.billingorder;""", id=anime_id)
-        anime["cast"] = [{"name": c[0], "role": c[1], "photourl": c[2]} for c in cast]
+               WHERE cm.mediaid=:id ORDER BY cm.billingorder NULLS LAST;""", id=anime_id)
+        anime["cast"] = [{"name": c[0], "role": c[1], "photourl": c[2], "id": c[3]} for c in cast]
 
         trailers = conn.run(
             "SELECT title, url FROM trailer WHERE mediaid=:id;", id=anime_id)

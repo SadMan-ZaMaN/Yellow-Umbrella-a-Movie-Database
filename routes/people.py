@@ -1,6 +1,7 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, BackgroundTasks
 
 from database import get_db
+from services import importer
 from services.importer import tmdb_get
 
 router = APIRouter(prefix="/people", tags=["People"])
@@ -51,12 +52,29 @@ def get_popular_people():
     except Exception as e:
         return {"error": str(e)}
 
+def _sync_in_background(person_id):
+    try:
+        importer.sync_person(person_id)
+    except Exception as e:
+        print(f"[people] couldn't sync person {person_id}: {e}")
+
+
+def _credit(row):
+    mediaid, title, mediatype, poster, released, rating, role = row
+    return {"id": mediaid, "title": title, "type": mediatype, "posterurl": poster,
+            "releasedate": str(released) if released else None,
+            "avgrating": float(rating) if rating is not None else None, "role": role}
+
+
 @router.get("/{person_id}")
-def get_person_detail(person_id: int):
+def get_person_detail(person_id: int, background: BackgroundTasks):
+    """A person and everything we have them in. The first time someone's page
+    is opened, their best-known titles are pulled from TMDB in the background;
+    `syncing` tells the page to check back in a moment."""
     conn = get_db()
     try:
         rows = conn.run(
-            "SELECT personid, name, bio, photourl, birthdate FROM person WHERE personid=:id;",
+            "SELECT personid, name, bio, photourl, birthdate, credits_synced_at FROM person WHERE personid=:id;",
             id=person_id)
         if not rows:
             return {"error": "Not found"}
@@ -64,26 +82,26 @@ def get_person_detail(person_id: int):
         person = {"id": r[0], "name": r[1], "bio": r[2],
                   "photo": r[3], "birthdate": str(r[4]) if r[4] else None}
 
-        actor = conn.run("SELECT agentname, unionstatus FROM actor WHERE actorid=:id;", id=person_id)
-        if actor:
-            person["role"] = "actor"
-            filmography = conn.run(
-                """SELECT m.mediaid, m.title, cm.rolename, m.mediatype FROM cast_member cm
-                   JOIN media m ON cm.mediaid=m.mediaid WHERE cm.actorid=:id
-                   ORDER BY m.popularity DESC NULLS LAST;""",
-                id=person_id)
-            person["filmography"] = [{"id": f[0], "title": f[1], "role": f[2], "type": f[3]} for f in filmography]
+        syncing = importer.is_syncing(person_id)
+        if r[5] is None and not syncing:
+            background.add_task(_sync_in_background, person_id)
+            syncing = True
+        person["syncing"] = syncing
 
-        director = conn.run("SELECT guildid FROM director WHERE directorid=:id;", id=person_id)
-        if director:
-            person["role"] = person.get("role", "") + " director"
-            directed = conn.run(
-                """SELECT m.mediaid, m.title, m.mediatype FROM media_director md
-                   JOIN media m ON md.mediaid=m.mediaid WHERE md.directorid=:id
-                   ORDER BY m.popularity DESC NULLS LAST;""",
-                id=person_id)
-            person["directed"] = [{"id": d[0], "title": d[1], "type": d[2]} for d in directed]
+        # best-known first: most votes on TMDB / RAWG
+        person["filmography"] = [_credit(f) for f in conn.run(
+            """SELECT m.mediaid, m.title, m.mediatype, m.posterurl, m.releasedate, m.avgrating, cm.rolename
+               FROM cast_member cm JOIN media m ON cm.mediaid = m.mediaid
+               WHERE cm.actorid = :id
+               ORDER BY m.vote_count DESC NULLS LAST, m.popularity DESC NULLS LAST;""", id=person_id)]
+        person["directed"] = [_credit(d) for d in conn.run(
+            """SELECT m.mediaid, m.title, m.mediatype, m.posterurl, m.releasedate, m.avgrating, NULL
+               FROM media_director md JOIN media m ON md.mediaid = m.mediaid
+               WHERE md.directorid = :id
+               ORDER BY m.vote_count DESC NULLS LAST, m.popularity DESC NULLS LAST;""", id=person_id)]
 
+        roles = [name for name, credits in (("Actor", person["filmography"]), ("Director", person["directed"])) if credits]
+        person["role"] = " · ".join(roles) or None
         return person
     finally:
         conn.close()

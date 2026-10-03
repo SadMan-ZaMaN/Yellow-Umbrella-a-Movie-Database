@@ -91,7 +91,7 @@ function mediaCard(item, { rank } = {}) {
     const poster = imageUrl(item.poster || item.posterurl) || POSTER_FALLBACK;
     const rating = item.rating ?? item.avgrating;
     const year = item.year || (item.releasedate || '').slice(0, 4);
-    const meta = [year, type === 'person' ? item.subtitle : type].filter(Boolean).join(' · ');
+    const meta = item.meta ?? [year, type === 'person' ? item.subtitle : type].filter(Boolean).join(' · ');
 
     return `
         <a href="${url}" class="poster-card">
@@ -108,6 +108,29 @@ function mediaCard(item, { rank } = {}) {
 
 function skeletonCards(count) {
     return Array.from({ length: count }, () => '<div class="skeleton"></div>').join('');
+}
+
+// Cast list on title pages; each person links to their page (which pulls in
+// the rest of their best-known work the first time it's opened).
+function renderCast(container, cast) {
+    if (!cast || !cast.length) {
+        container.innerHTML = '<span class="text-brand-gray">No cast details yet.</span>';
+        return;
+    }
+    container.innerHTML = cast.map(actor => {
+        const initials = (actor.name || '?').split(/\s+/).map(w => w[0]).slice(0, 2).join('');
+        const fallback = `https://placehold.co/88x88/1f2833/c5c6c7?text=${encodeURIComponent(initials)}`;
+        const photo = imageUrl(actor.photourl, 'w185') || fallback;
+        return `
+            <a href="/person.html?id=${actor.id}" class="group bg-black/40 border border-white/10 pl-1.5 pr-4 py-1.5 rounded-full flex items-center gap-3 hover:border-brand-gold/50 hover:bg-white/5 transition-colors">
+                <img src="${photo}" alt="" loading="lazy" onerror="this.onerror=null;this.src='${fallback}'"
+                     class="w-11 h-11 rounded-full object-cover bg-brand-second flex-none">
+                <span class="flex flex-col min-w-0">
+                    <strong class="text-white text-sm leading-tight group-hover:text-brand-gold transition-colors">${escapeHtml(actor.name)}</strong>
+                    ${actor.role ? `<span class="text-brand-gray text-xs mt-0.5 truncate max-w-[180px]">as <span class="italic text-brand-gold/80">${escapeHtml(actor.role)}</span></span>` : ''}
+                </span>
+            </a>`;
+    }).join('');
 }
 
 // Detail pages (movie / series / anime / game): the title's backdrop behind

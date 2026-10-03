@@ -68,7 +68,10 @@ CREATE TABLE person (
     bio         TEXT,
     photourl    VARCHAR(512),
     birthdate   DATE,
-    tmdb_id     INT UNIQUE
+    tmdb_id     INT UNIQUE,
+    -- when we last pulled this person's best-known work from TMDB; NULL
+    -- means their page will do it on the next visit
+    credits_synced_at TIMESTAMPTZ
 );
 
 CREATE TABLE actor (

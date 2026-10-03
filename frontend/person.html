@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Yellow Umbrella - Person Profile</title>
+<title>Person - YellowUmbrella</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Outfit:wght@500;700;800&amp;display=swap" rel="stylesheet"/>
@@ -12,169 +11,152 @@
 </head>
 <body class="bg-brand-dark text-white min-h-screen flex flex-col font-sans">
 <nav id="site-nav"></nav>
-<main class="w-[90%] max-w-[1400px] mx-auto flex-1 py-10">
-<div class="text-center mt-[30px] text-brand-gray" id="loading-spinner">Loading Profile...</div>
-<div class="text-red-500 text-center mt-[30px] hidden text-[1.2rem]" id="error-box"></div>
-<div id="person-content" class="hidden">
-<div class="flex flex-col md:flex-row gap-10 items-start mb-10">
-<img id="p-photo" src="" class="w-[300px] rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] border-[2px] border-white/5"/>
-<div class="flex-1 w-full">
-<div id="p-role" class="uppercase text-brand-gold font-bold text-[0.85rem] tracking-widest mb-2.5"></div>
-<h1 id="p-name" class="text-[4rem] md:text-6xl mb-1 leading-none text-white font-bold"></h1>
-<div class="text-brand-gray mb-[30px] text-[1.1rem]">
-                        Born: <span id="p-birth" class="text-white font-semibold"></span>
-</div>
-<div class="bg-black/40 border border-white/10 rounded-[20px] p-[30px] shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] leading-[1.8]">
-<h3 class="text-brand-red mb-2.5 font-bold text-xl">Biography</h3>
-<p id="p-bio" class="text-brand-gray"></p>
-</div>
-</div>
-</div>
-<hr class="border-t border-white/10 my-10"/>
-<div class="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-10">
-<!-- Credits List -->
-<div>
-<!-- Acting -->
-<div id="acting-block" class="hidden mb-10">
-<h2 class="mb-5 text-2xl font-bold">Acting Credits</h2>
-<div id="p-credits" class="flex flex-col gap-2.5"></div>
-</div>
-<!-- Directing -->
-<div id="directing-block" class="hidden">
-<h2 class="mb-5 text-2xl font-bold">Directing Credits</h2>
-<div id="p-directed" class="flex flex-col gap-2.5"></div>
-</div>
-</div>
-<!-- Community Comments -->
-<div>
-<h2 class="text-2xl font-bold">Community Discussion</h2>
-<div class="bg-black/30 border border-white/10 rounded-[20px] p-[30px] shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] mt-5 auth-only auth-hidden">
-<h4 class="text-brand-gold mb-2.5 font-bold">Leave a Comment</h4>
-<textarea class="w-full bg-black/20 border border-white/10 text-white py-3 px-4 rounded-lg font-sans text-base transition focus:outline-none focus:border-brand-gold focus:bg-black/40 focus:ring-2 focus:ring-brand-gold/20 mb-[15px]" id="comment-text" placeholder="Discuss their body of work..." rows="3"></textarea>
-<button class="bg-brand-red text-white py-3 px-6 rounded-lg font-semibold text-base hover:bg-[currentColor] hover:shadow-[0_0_15px_rgba(229,9,20,0.4)] hover:-translate-y-0.5 transition inline-flex items-center justify-center gap-2 w-full" id="post-comment-btn">Post Comment</button>
-</div>
-<div class="mt-[30px] flex flex-col gap-[15px]" id="comments-feed"></div>
-</div>
-</div>
-</div>
+
+<main class="w-[92%] max-w-[1400px] mx-auto flex-1 py-10">
+    <p id="status" class="text-center text-brand-gray py-10">Loading…</p>
+
+    <div id="person-content" class="hidden">
+        <section class="flex flex-col sm:flex-row gap-6 md:gap-10 items-start">
+            <img id="p-photo" src="" alt=""
+                 class="w-[160px] sm:w-[220px] md:w-[260px] aspect-[2/3] object-cover rounded-2xl bg-brand-second border border-white/10 flex-none">
+            <div class="flex-1 min-w-0">
+                <p id="p-role" class="uppercase text-brand-gold font-bold text-xs tracking-widest mb-2"></p>
+                <h1 id="p-name" class="text-4xl md:text-6xl font-outfit font-bold leading-tight"></h1>
+                <p id="p-birth" class="text-brand-gray mt-2"></p>
+                <p id="p-bio" class="text-brand-gray leading-relaxed mt-5 max-w-3xl line-clamp-6 cursor-pointer whitespace-pre-line"
+                   title="Click to read more"></p>
+            </div>
+        </section>
+
+        <p id="syncing" class="hidden mt-10 text-sm text-brand-gray flex items-center gap-3">
+            <span class="loading-spinner !w-5 !h-5 !border-2"></span>
+            Fetching more of their work from TMDB…
+        </p>
+
+        <section id="acting-block" class="hidden mt-12">
+            <h2 class="section-title mb-5">Known for</h2>
+            <div class="poster-grid" id="p-credits"></div>
+        </section>
+
+        <section id="directing-block" class="hidden mt-12">
+            <h2 class="section-title mb-5">Directed / created</h2>
+            <div class="poster-grid" id="p-directed"></div>
+        </section>
+
+        <section class="mt-14 max-w-3xl">
+            <h2 class="section-title">Community discussion</h2>
+            <div class="bg-black/30 border border-white/10 rounded-2xl p-6 mt-5 auth-only auth-hidden">
+                <textarea class="w-full bg-black/20 border border-white/10 text-white py-3 px-4 rounded-lg text-base focus:outline-none focus:border-brand-gold mb-3"
+                          id="comment-text" placeholder="Discuss their body of work…" rows="3"></textarea>
+                <button class="btn-gold w-full py-3" id="post-comment-btn">Post comment</button>
+            </div>
+            <div class="mt-6 flex flex-col gap-4" id="comments-feed"></div>
+        </section>
+    </div>
 </main>
+
 <script src="/statics/app.js?v=5"></script>
 <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            const params = new URLSearchParams(window.location.search);
-            // Default 1004 (Robert Downey Jr example, or fallback)
-            const personId = params.get('id') ? parseInt(params.get('id')) : 1004; 
+    const personId = parseInt(new URLSearchParams(location.search).get('id'));
+    const PHOTO_FALLBACK = 'https://placehold.co/260x390/1f2833/c5c6c7?text=No+Photo';
 
-            try {
-                // Fetch Person specifics
-                const res = await fetch(`/people/${personId}`);
-                if (!res.ok) throw new Error("Backend route not found or ID invalid.");
-                const person = await res.json();
-                
-                if (person.error) throw new Error(person.error);
+    function renderCredits(person) {
+        const acting = person.filmography || [];
+        const directed = person.directed || [];
+        document.getElementById('acting-block').classList.toggle('hidden', !acting.length);
+        document.getElementById('directing-block').classList.toggle('hidden', !directed.length);
+        document.getElementById('p-credits').innerHTML = acting.map(c => mediaCard({
+            ...c, meta: c.role ? `as ${c.role}` : (c.releasedate || '').slice(0, 4),
+        })).join('');
+        document.getElementById('p-directed').innerHTML = directed.map(c => mediaCard(c)).join('');
+    }
 
-                document.getElementById('loading-spinner').style.display = 'none';
-                document.getElementById('person-content').style.display = 'block';
+    function renderPerson(person) {
+        document.title = `${person.name} - YellowUmbrella`;
+        document.getElementById('p-name').textContent = person.name;
+        document.getElementById('p-role').textContent = person.role || '';
+        document.getElementById('p-photo').src = imageUrl(person.photo, 'w500') || PHOTO_FALLBACK;
+        document.getElementById('p-birth').textContent = person.birthdate ? `Born ${person.birthdate}` : '';
+        document.getElementById('p-bio').textContent = person.bio || '';
+        renderCredits(person);
+        document.getElementById('syncing').classList.toggle('hidden', !person.syncing);
+    }
 
-                document.title = `${person.name} - Yellow Umbrella`;
-                
-                document.getElementById('p-name').textContent = person.name;
-                document.getElementById('p-photo').src = (person.photo && person.photo.startsWith('/')) ? ('https://image.tmdb.org/t/p/w500' + person.photo) : (person.photo || 'https://placehold.co/300x450');
-                document.getElementById('p-birth').textContent = person.birthdate ? person.birthdate.split(' ')[0] : 'Unknown';
-                document.getElementById('p-bio').textContent = person.bio || 'Biography not available for this individual.';
-                
-                const roleText = person.role || 'Industry Professional';
-                document.getElementById('p-role').textContent = roleText;
+    async function fetchPerson() {
+        const person = await (await fetch(`/people/${personId}`)).json();
+        if (person.error) throw new Error(person.error);
+        return person;
+    }
 
-                // Acting Roster
-                if (person.filmography && person.filmography.length > 0) {
-                    document.getElementById('acting-block').style.display = 'block';
-                    const credDiv = document.getElementById('p-credits');
-                    person.filmography.forEach(film => {
-                        const row = document.createElement('div');
-                        row.className = 'bg-black/40 border border-white/10 rounded-lg p-4 flex justify-between cursor-pointer transition hover:bg-black/40 border border-white/10';
-                        row.onclick = () => window.location.href = `/${film.type || 'movie'}.html?id=${film.id}`;
-                        row.innerHTML = `
-                            <strong class="text-white">${escapeHtml(film.title)}</strong>
-                            <span class="text-brand-gray text-right">${film.role ? `as ${escapeHtml(film.role)}` : ''}</span>
-                        `;
-                        credDiv.appendChild(row);
-                    });
-                }
+    // The first visit to someone's page pulls their best-known work from TMDB
+    // in the background. Check back a few times until it's done.
+    async function waitForSync(attempt = 0) {
+        await new Promise(r => setTimeout(r, 2500));
+        try {
+            const person = await fetchPerson();
+            renderPerson(person);
+            if (person.syncing && attempt < 10) waitForSync(attempt + 1);
+        } catch (err) {
+            document.getElementById('syncing').classList.add('hidden');
+        }
+    }
 
-                // Directing Roster
-                if (person.directed && person.directed.length > 0) {
-                    document.getElementById('directing-block').style.display = 'block';
-                    const dirDiv = document.getElementById('p-directed');
-                    person.directed.forEach(film => {
-                        const row = document.createElement('div');
-                        row.className = 'bg-black/40 border border-white/10 rounded-lg p-4 flex justify-between cursor-pointer transition hover:bg-black/40 border border-white/10';
-                        row.onclick = () => window.location.href = `/${film.type || 'movie'}.html?id=${film.id}`;
-                        row.innerHTML = `
-                            <strong class="text-white">${escapeHtml(film.title)}</strong>
-                            <span class="text-brand-red font-semibold">${film.type === 'movie' ? 'Director' : 'Creator'}</span>
-                        `;
-                        dirDiv.appendChild(row);
-                    });
-                }
+    async function loadComments() {
+        const feed = document.getElementById('comments-feed');
+        try {
+            const comments = await (await fetch(`/comments/person/${personId}`)).json();
+            feed.innerHTML = comments.length
+                ? comments.map(c => `
+                    <div class="bg-black/40 border border-white/10 rounded-2xl p-4">
+                        <div class="flex justify-between mb-2">
+                            <strong class="text-brand-gold text-sm">${escapeHtml(c.username)}</strong>
+                            <span class="text-[#777] text-xs">${c.at ? c.at.split(' ')[0] : ''}</span>
+                        </div>
+                        <p class="text-brand-gray">${escapeHtml(c.text)}</p>
+                    </div>`).join('')
+                : '<p class="text-brand-gray">No comments yet. Start the discussion!</p>';
+        } catch (err) {
+            feed.innerHTML = '<p class="text-red-400">Couldn\'t load comments.</p>';
+        }
+    }
 
-                // Load Comments
-                const loadComments = async () => {
-                    const commentFeed = document.getElementById('comments-feed');
-                    commentFeed.innerHTML = 'Loading discussion...';
-                    try {
-                        const res = await fetch(`/comments/person/${personId}`);
-                        const comments = await res.json();
-                        
-                        if (comments.error || comments.length === 0) {
-                            commentFeed.innerHTML = '<div class="text-brand-gray">No comments yet. Start the discussion!</div>';
-                            return;
-                        }
-                        
-                        commentFeed.innerHTML = comments.map(c => `
-                            <div class="bg-black/40 border border-white/10 rounded-[20px] p-[15px] shadow-[0_8px_32px_0_rgba(0,0,0,0.37)]">
-                                <div class="flex justify-between mb-2">
-                                    <strong class="text-brand-gold text-[0.9rem]">${escapeHtml(c.username)}</strong>
-                                    <span class="text-[#777] text-[0.8rem]">${c.at ? c.at.split(' ')[0] : ''}</span>
-                                </div>
-                                <p class="text-brand-gray text-[0.95rem]">${escapeHtml(c.text)}</p>
-                            </div>
-                        `).join('');
-                    } catch(err) {
-                        commentFeed.innerHTML = 'Error loading comments.';
-                    }
-                };
-                
-                await loadComments();
+    document.getElementById('p-bio').addEventListener('click', e => e.currentTarget.classList.toggle('line-clamp-6'));
 
-                // Post Comment
-                const postBtn = document.getElementById('post-comment-btn');
-                postBtn.addEventListener('click', async () => {
-                    const text = document.getElementById('comment-text').value;
-                    const user = getUser();
-                    
-                    if (!user) return alert("Must be logged in.");
-                    if (!text.trim()) return alert("Comment cannot be empty.");
-                    
-                    try {
-                        await apiFetch(`/comments/person`, {
-                            method: 'POST',
-                            body: JSON.stringify({ personid: personId, userid: user.userid, commenttext: text })
-                        });
-                        document.getElementById('comment-text').value = '';
-                        await loadComments();
-                    } catch (err) {
-                        alert(err.message);
-                    }
-                });
+    document.getElementById('post-comment-btn').addEventListener('click', async () => {
+        const text = document.getElementById('comment-text').value;
+        const user = getUser();
+        if (!user) return alert('Must be logged in.');
+        if (!text.trim()) return alert('Comment cannot be empty.');
+        try {
+            await apiFetch('/comments/person', {
+                method: 'POST',
+                body: JSON.stringify({ personid: personId, userid: user.userid, commenttext: text }),
+            });
+            document.getElementById('comment-text').value = '';
+            await loadComments();
+        } catch (err) {
+            alert(err.message);
+        }
+    });
 
-            } catch (err) {
-                document.getElementById('loading-spinner').style.display = 'none';
-                const el = document.getElementById('error-box');
-                el.style.display = 'block';
-                el.textContent = err.message || "Failed to load individual entry.";
-            }
-        });
-    </script>
+    (async () => {
+        const status = document.getElementById('status');
+        if (!personId) {
+            status.textContent = 'No person selected.';
+            return;
+        }
+        try {
+            const person = await fetchPerson();
+            status.remove();
+            document.getElementById('person-content').classList.remove('hidden');
+            renderPerson(person);
+            loadComments();
+            if (person.syncing) waitForSync();
+        } catch (err) {
+            status.textContent = `Couldn't load this person: ${err.message}`;
+            status.classList.add('text-red-400');
+        }
+    })();
+</script>
 </body>
 </html>

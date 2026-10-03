@@ -126,34 +126,14 @@
                 document.getElementById('m-rating').textContent = movie.avgrating ? `★ ${movie.avgrating.toFixed(1)}/10` : 'Not Rated';
                 
                 document.getElementById('m-genres').textContent = (movie.genres || []).join(' • ');
-                document.getElementById('m-directors').textContent = (movie.directors || []).join(', ') || 'Unknown';
+                document.getElementById('m-directors').innerHTML = (movie.directors || [])
+                    .map(d => `<a href="/person.html?id=${d.id}" class="hover:text-brand-gold hover:underline">${escapeHtml(d.name)}</a>`)
+                    .join(', ') || 'Unknown';
                 
                 const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0});
                 document.getElementById('m-box').textContent = movie.boxoffice ? formatter.format(movie.boxoffice) : 'N/A';
 
-                // Render Cast
-                const castDiv = document.getElementById('m-cast');
-                if (movie.cast && movie.cast.length > 0) {
-                    movie.cast.forEach(actor => {
-                        const pill = document.createElement('div');
-                        pill.className = "bg-black/40 border border-white/10 px-4 py-2 rounded-full flex items-center gap-3 hover:bg-white/5 transition duration-200";
-                        let photoUrl = actor.photourl;
-                        if (photoUrl && photoUrl.startsWith('/')) {
-                            photoUrl = 'https://image.tmdb.org/t/p/w500' + photoUrl;
-                        } else if (!photoUrl || photoUrl === 'None') {
-                            photoUrl = 'https://placehold.co/60x60/111/fff?text=Photo';
-                        }
-                        pill.innerHTML = `
-                            <img src="${photoUrl}" onerror="this.onerror=null;this.src='https://placehold.co/60x60/111/fff?text=?';" class="w-12 h-12 rounded-full object-cover shadow-[0_0_10px_rgba(251,191,36,0.2)] border border-brand-gold/30">
-                            <div class="flex flex-col">
-                                <strong class="text-white text-sm leading-tight">${actor.name}</strong>
-                                <span class="text-brand-gray text-xs mt-1">as <span class="italic text-brand-gold/80">${actor.role}</span></span>
-                            </div>`;
-                        castDiv.appendChild(pill);
-                    });
-                } else {
-                    castDiv.innerHTML = '<span class="text-[#555]">No cast details found.</span>';
-                }
+                renderCast(document.getElementById('m-cast'), movie.cast);
 
                 // Render Trailers
                 const trailerDiv = document.getElementById('m-trailers');

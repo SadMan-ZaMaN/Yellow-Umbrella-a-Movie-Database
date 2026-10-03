@@ -23,6 +23,7 @@ An IMDb-style site for movies, TV series, anime and games, made as our project f
 - Browse movies, series, anime and games. Title pages show the synopsis, cast, directors, genres, trailers and box office.
 - **Search everything at once**: titles and people from our database, TMDB and RAWG, ranked by how well they match and how well known they are. Suggestions appear as you type, from the search box in the nav bar.
 - **Nothing is imported until you click it.** A search result we don't have yet links to `/open/...`, which pulls the full title (cast, trailers and so on) from TMDB or RAWG and then shows its page, so the database only grows with things people actually look at.
+- **Cast and crew link to their own pages.** The first time someone's page is opened, their bio and 15 best-known films and shows are pulled from TMDB in the background, so filmographies fill out as people browse.
 - **Trending this week** on the home page, live from TMDB and RAWG (cached for an hour, and falls back to our own data if they're unreachable).
 - **Top Rated** uses IMDb's weighted-rating formula in SQL, so one 10/10 vote can't put an unknown film above *The Godfather*.
 - **Awards**: Oscar nominees in the main categories since 2000, plus winners from the Golden Globes, BAFTA, Cannes and the Emmys, around 1,300 nominations in all, each linked to its film or person.
